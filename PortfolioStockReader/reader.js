@@ -3,28 +3,55 @@ var fs = require('graceful-fs'),
     request = require('request');
 
 function Reader(parameters){
-    this.stockList= new Array();
+    this.stockData=new Array();    
+
     this.outputDB=parameters['databaseName'] || 'temp.sqlite3';
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
+
+//in memory json portfolio
+//    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.portfolio="";
-    this.CreateListOfUniqueStockSymbols();
+
+
+
+    this.stockList= new Array();
+ // this.CreateListOfUniqueStockSymbols();
+
+this.purchaseDateList = new Array();
+//  this.CreateListOfUniquePurchaseDates();
     //    this.PrintUniqueTickers();
-    this.stockData=new Array();    
-    this.CalculatePurchaseSharePrice();
+
+   // this.CalculatePurchaseSharePrice();
 }
+
+Reader.prototype.init = function() {
+  this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+  this.CreateListOfUniqueStockSymbols();
+  this.CreateListOfUniquePurchaseDates();
+
+this.GetCurrentStockData(this.CalculateGains.bind(this));
+
+// this.CalculatePurchaseSharePrice();
+console.log("this.portfolio");
+console.log(JSON.stringify(this.portfolio));
+console.log("this.stockList");
+console.log(JSON.stringify(this.stockList.sort()));
+console.log("this.purchaseDateList");
+console.log(JSON.stringify(this.purchaseDateList.sort()));
+};
 
 Reader.prototype.PrintUniqueTickers = function() {
     for (var i = 0; i<this.stockList.length; i++){
-	console.log(this.stockList[i].ticker);
+	console.log(this.stockList[i]);
     }
 };
 
 Reader.prototype.CreateListOfUniqueStockSymbols = function() {
-    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+  //  this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
 
-    this.stockList.push({ticker:"^DJI"});
-    this.stockList.push({ticker:"^gspc"});
-    this.stockList.push({ticker:"^ixic"});
+    this.stockList.push("^dji");
+    this.stockList.push("^gspc");
+    this.stockList.push("^ixic");
     
     /*this.portfolio.portfolio.forEach( function(ele,idx,fA) {
       ele.portfolioStocks.forEach( function(ele_,idx_,fA_){
@@ -38,13 +65,35 @@ Reader.prototype.CreateListOfUniqueStockSymbols = function() {
 	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		var foundFlag=false;
 		for ( var k=0;k<this.stockList.length;k++){
-		    if (this.stockList[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()){
+		    if (this.stockList[k]===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()){
 			foundFlag=true;
 			break;
 		    }
 		}
 		if (foundFlag===false){
-		    this.stockList.push({ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()});
+		  //this.stockList.push({ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()});
+                  this.stockList.push(this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
+		}
+	    }
+	}
+    }
+}
+
+//This is needed to efficiently perform the comparison to the benchmark
+Reader.prototype.CreateListOfUniquePurchaseDates = function() {
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		var foundFlag=false;
+		for ( var k=0;k<this.purchaseDateList.length;k++){
+		    if (this.purchaseDateList[k]===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+			foundFlag=true;
+			break;
+		    }
+		}
+		if (foundFlag===false){
+		  //this.purchaseDateList.push({purchaseDate:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate});
+this.purchaseDateList.push(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
 		}
 	    }
 	}
@@ -77,7 +126,8 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     
     for (var i = 0; i< this.stockList.length; i++){
 	var requestOptions= {
-	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i].ticker + '&f=l1opwt7',
+//	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i].ticker + '&f=l1opwt7',
+	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i] + '&f=l1opwt7',
 	    headers: {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11' }
 	}
 	var dataRequest=request(requestOptions,(function(i,url) { return function(err,resp,body) {
@@ -99,13 +149,13 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 	    //	    console.log(url);
 	    //	    console.log(i);
 	    
-	    console.log(that.stockList[i].ticker+" " +body);
+	    console.log(that.stockList[i]+" " +body);
 	    var split = body.replace(/\"/g,"").replace(/\n/,"").split(",");
 	    
 	    var lowHigh=split[3].split(" - "),
 		low=lowHigh[0] || ""
 	    high=lowHigh[1] || "";
-	    that.stockData.push({ticker:that.stockList[i].ticker,
+	    that.stockData.push({ticker:that.stockList[i],
 				 currentPrice:split[0],
 				 openPrice:split[1],
 				 prevClosePrice:split[2],
@@ -131,6 +181,66 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     
 }
 
+//Reader.prototype.CalculateDollarGains = function(){
+Reader.prototype.CalculateGains = function(){
+  for (var i=0; i<this.portfolio.portfolio.length; i++){
+    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+      var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker;
+      var stockData = this.stockData.filter( function(item) {
+                        return item.ticker === currentStockTicker; //this context changes
+                      });
+      this.portfolio.portfolio[i].portfolioStocks[j].dollarGain = parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - stockData.currentPrice * parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
+      this.portfolio.portfolio[i].portfolioStocks[j].percentGain = this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
+    }
+  }
+console.log(JSON.stringify(this.portfolio));
+}
+
+
+Reader.prototype.PortfolioCalculateGains = function(){
+  for (var i=0; i<this.portfolio.portfolio.length; i++){
+    var dailyGains = 0,
+        dailyLosses = 0
+    totalCommissionPaid = 0,
+    totalPurchasePrice = 0,
+    totalGains = 0,
+    totalLosses = 0, 
+    portfolioValue = 0;
+
+    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+/*      var stockData = this.stockData.filter( function(item) {
+                        return item.ticker === this.portfolio.portfolio[i].portfolioStocks[j].ticker
+                      });
+      this.portfolio.portfolio[i].portfolioStocks[j].dollarGain = this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice - stockData.currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
+      this.portfolio.portfolio[i].portfolioStocks[j].percentGain = this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
+this code is for each stock, not for the portfolio itself.
+*/
+      if ( this.portfolio.portfolio[i].portfolioStocks[j].dollarGain > 0) {
+        totalGains+=this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+      } else {
+        toalLosses += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+      }
+      totalGainLoss += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+      totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionPaid;
+      totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
+      portfolioValue += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice + this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+
+    }
+    this.portfolio.portfolio[i].portfolioGains = dollarGains;
+  }
+}
+/*
+Reader.prototype.CalculatePercentGains = function(){
+  for (var i=0; i<this.portfolio.portfolio.length; i++){
+    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+      var stockData = this.stockData.filter( function(item) {
+                        return item.ticker === this.portfolio.portfolio[i].portfolioStocks[j].ticker
+                      });
+      this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice - stockData.currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
+    }
+  }
+}*/
+
 //if a piece of the puzzle is missing have it call the missing piece with itself as a callback so that it gets run upon completion of the missing piece.
 Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
     
@@ -141,14 +251,13 @@ Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
 	return value.ticker = stockItem.ticker;
     });
     var endingValue = stockItem.shares * currentSharePriceArray[0].sharePrice /* - stockItem.commissionToSell */;
-    //stockItem.totalPurchasePrice
 
     //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/pow
     //    var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/this.CalculateHoldingTimePeriod(stockItem) )*100;
         var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/stockItem.holdingTimePeriodInYears )*100;
     
     return annualizedReturn;
-//    ARR=(((self.dollarGain/self.totalpurchaseprice+1)**(1/self.yearsSincePurchase()) -1 ) *100) 
+// formula from python version    ARR=(((self.dollarGain/self.totalpurchaseprice+1)**(1/self.yearsSincePurchase()) -1 ) *100) 
     
 }
 
@@ -178,14 +287,12 @@ Reader.prototype.CalculateHoldingTimePeriod = function() {
 
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
-		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - purchaseDate ) / ( 365 * 24 *3600 * 1000);
+		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate); // "10/23/2003" 
+		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - pD ) / ( 365 * 24 * 3600 * 1000);
+
 	}
     }
 }
-
-
-
 
 Reader.prototype.ComputeReturn = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
@@ -206,3 +313,5 @@ Reader.prototype.CalculatePurchaseSharePrice = function(){
 }
 
 module.exports = Reader
+
+//run the json data through a handlebars template for HTML output, I suppose json data is good enough for command line display. 
