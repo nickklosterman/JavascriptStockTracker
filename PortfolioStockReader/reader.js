@@ -10,12 +10,15 @@ function Reader(parameters){
     this.CreateListOfUniqueStockSymbols();
     //    this.PrintUniqueTickers();
     this.stockData=new Array();    
+    this.CalculatePurchaseSharePrice();
 }
+
 Reader.prototype.PrintUniqueTickers = function() {
     for (var i = 0; i<this.stockList.length; i++){
 	console.log(this.stockList[i].ticker);
     }
 };
+
 Reader.prototype.CreateListOfUniqueStockSymbols = function() {
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
 
@@ -128,6 +131,78 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     
 }
 
+//if a piece of the puzzle is missing have it call the missing piece with itself as a callback so that it gets run upon completion of the missing piece.
+Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
+    
+    //I believe that I should take into account the commissionToSell in the calculation (and taxes) to truly calculate annualized return)
+    
+    //use filter to find matching stock https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
+    var currentSharePriceArray = this.stockData.filter( function(value){
+	return value.ticker = stockItem.ticker;
+    });
+    var endingValue = stockItem.shares * currentSharePriceArray[0].sharePrice /* - stockItem.commissionToSell */;
+    //stockItem.totalPurchasePrice
 
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/pow
+    //    var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/this.CalculateHoldingTimePeriod(stockItem) )*100;
+        var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/stockItem.holdingTimePeriodInYears )*100;
+    
+    return annualizedReturn;
+//    ARR=(((self.dollarGain/self.totalpurchaseprice+1)**(1/self.yearsSincePurchase()) -1 ) *100) 
+    
+}
+
+Reader.prototype.CalculateHoldingTimePeriod____ = function(stockItem) {
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
+    var now = new Date.now(), //time in ms
+	purchaseDate,
+	purchaseYear,
+	purchaseMonth,
+	purchaseDay,
+	elapsedMilliseconds,
+	elapsedYears;
+   
+    purchaseDate = new Date(stockItem.purchaseDate);//purchaseYear,purchaseMonth,purchaseDay);
+    elapsedMilliseconds = now - purchaseDate;
+    elapsedYears = elapsedMilliseconds / (365*24*60*60*1000);
+    
+    return elapsedYears;
+}
+
+Reader.prototype.CalculateHoldingTimePeriod = function() {
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
+   
+    var now = new Date.now();
+
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
+		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - purchaseDate ) / ( 365 * 24 *3600 * 1000);
+	}
+    }
+}
+
+
+
+
+Reader.prototype.ComputeReturn = function(){
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+	    this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio.portfolio[i].portfolioStocks[j] );
+	}
+    }
+}
+
+Reader.prototype.CalculatePurchaseSharePrice = function(){
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+	    if (typeof this.portfolio.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
+		this.portfolio.portfolio[i].portfolioStocks[j].sharePrice = ( this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice - this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy ) / this.portfolio.portfolio[i].portfolioStocks[j].shares;
+	    }
+	}
+    }
+}
 
 module.exports = Reader
