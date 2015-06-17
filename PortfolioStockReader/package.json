@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-      "url": "github.com/nickklosterman"
+    "url": "github.com/nickklosterman"
   },
   "keywords": [
     "node",
@@ -23,6 +23,7 @@
   "private": true,
   "dependencies": {
     "graceful-fs": "3.0.4",
+    "handlebars": "^3.0.3",
     "request": "^2.57.0"
   }
 }

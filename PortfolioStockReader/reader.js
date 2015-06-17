@@ -1,6 +1,8 @@
 var fs = require('graceful-fs'),
     //    sqlite3 = require('sqlite3'), look at tumblr for sqlite stuff
 //    q = require('q'),
+// npm install -save someNPMthingee
+hbs = require('handlebars'),
     request = require('request');
 
 function Reader(parameters){
@@ -23,7 +25,7 @@ function Reader(parameters){
     //    this.PrintUniqueTickers();
 
    // this.CalculatePurchaseSharePrice();
-}
+};
 
 Reader.prototype.callbackStack = function() {
     this.CalculateGains(); 
@@ -36,7 +38,14 @@ Reader.prototype.callbackStack = function() {
 //    console.log("output:",this.portfolio);
     console.log(JSON.stringify(this.portfolio));
 
-}
+
+this.OutputDisplayedPortfolios();
+//I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
+//or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
+//Or have the first operation be to only return the display = yes portfolios
+
+this.RenderOutput();
+};
 
 Reader.prototype.CheckComplete = function() {
     this.completionCounter+=1;
@@ -46,7 +55,7 @@ Reader.prototype.CheckComplete = function() {
 	this.callbackStack();
     }
 
-}
+};
 
 Reader.prototype.init = function() {
         this.completionsNeeded = 2;
@@ -409,7 +418,6 @@ Reader.prototype.CalculatePurchaseSharePrice = function(){
 
 
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
-    
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
@@ -515,6 +523,42 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
     
 };
 
+
+
+Reader.prototype.OutputDisplayedPortfolios = function() {
+  var outputPortfolioArray = {portfolio:[]};//new Array
+/*  for ( var i=0;i<this.portfolio.portfolio.length;i++){
+    if (this.portfolio.portfolio[i].display=="yes"){
+      console.log(this.portfolio.portfolio[i])
+outputPortfolioArray.portfolio.push(this.portfolio.portfolio
+    }
+  }/*/
+  outputPortfolioArray.portfolio = this.portfolio.portfolio.filter( function(insidePortfolio) {
+                                     return insidePortfolio.display == "yes";
+                                   });
+console.log(outputPortfolioArray);
+}
+
+
+Reader.prototype.RenderOutput = function() {
+var line = "<div><span class=\"\">{{ticker}}</span><span class=\"\">{{gain}}</span><span class=\"\">{{totalPurchasePrice}}</span><span class=\"\">{{ticker}}</span></div>";
+
+var source = "<p>Hello, my name is {{name}}. I am from {{hometown}}. I have " +
+             "{{kids.length}} kids:</p>" +
+             "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>";
+var template = hbs.compile(source);
+
+var data = { "name": "Alan", "hometown": "Somewhere, TX",
+             "kids": [{"name": "Jimmy", "age": "12"}, {"name": "Sally", "age": "4"}]};
+var result = template(data);
+
+console.log(result);
+}
+
 module.exports = Reader
 
 //run the json data through a handlebars template for HTML output, I suppose json data is good enough for command line display. 
+
+//how to track new purchases from old funds / sales? If I had sold POT to buy NFLX the purchaseDate would screw stuff up. I'd have to add in a new parameter to track things. I'd have to use the old date for the comparison (to SP500) but another date for the gain for that new purchase. 
+
+//It'd be nice to be able to tell the time distance from the 52 wk low and highs. It is better to be closer to the high (time wise) than the low. 
