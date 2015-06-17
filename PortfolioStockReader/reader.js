@@ -28,11 +28,13 @@ function Reader(parameters){
 Reader.prototype.callbackStack = function() {
     this.CalculateGains(); 
     this.PortfolioCalculateGains();
-    console.log("cSD_cbs 1:",this.currentStockData);
+//    console.log("cSD_cbs 1:",this.currentStockData);
     this.ComputeAnnualizedReturn(); // this.currentStockData is getting jacked up somehow in here
-    console.log("cSD_cbs 2:",this.currentStockData);
-
-    console.log("output:",this.portfolio); //JSON.stringify(this.portfolio));
+  //  console.log("cSD_cbs 2:",this.currentStockData);
+    this.TotalPortfolioGains();
+        this.TotalPortfolioPurchasePrice();
+//    console.log("output:",this.portfolio);
+    console.log(JSON.stringify(this.portfolio));
 
 }
 
@@ -211,7 +213,7 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 	    if (completionCounter==that.stockList.length){
 		//		console.log(JSON.stringify(that.currentStockData));
 		console.log("getCurrentStockData done");
-		console.log("cSD:",that.currentStockData);
+//		console.log("cSD:",that.currentStockData);
 		if (cb) {
 		    cb();
 		}
@@ -232,21 +234,48 @@ Reader.prototype.CalculateGains = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker;
+		var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase();
 //		console.log("cSD_cG:",this.currentStockData);
 		var stockData = this.currentStockData.filter( function(item) {
                     return item.ticker === currentStockTicker; // 'this' context changes so I created currentStockTicker
                 });
-		if (stockData.length ==0 ){ console.log("shit:"+currentStockTicker);} else {
-		this.portfolio.portfolio[i].portfolioStocks[j].dollarGain = parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - stockData[0].currentPrice * parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
-		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice);
+		if ( stockData.length == 0 ){ console.log("shit:"+currentStockTicker);} else {
+		    //console.log(stockData[0].currentPrice);
+		    this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
+		    var temp = this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice);
+		    if ( temp == null ) {
+			console.log("Derp");}
+		    if (temp == 'null') {
+			console.log("darp");
+		    }
+		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
 		}
 	    }
 	}
     }
 //console.log(JSON.stringify(this.portfolio));
 }
+Reader.prototype.TotalPortfolioGains = function() {
+    var totalGains = 0 ;
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	if ( this.portfolio.portfolio[i].display == 'yes'){
+	    totalGains += this.portfolio.portfolio[i].portfolioGains;
+	}
+    }
+    this.portfolio.totalGains = totalGains;
 
+}
+Reader.prototype.TotalPortfolioPurchasePrice = function() {
+    var totalPurchasePrice = 0 ;
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	if ( this.portfolio.portfolio[i].display == 'yes'){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
+	    }
+	}
+    }
+    this.portfolio.totalPurchasePrice = totalPurchasePrice;
+}
 
 Reader.prototype.PortfolioCalculateGains = function(){
   for (var i=0; i<this.portfolio.portfolio.length; i++){
@@ -319,10 +348,11 @@ Reader.prototype.CalculateHoldingTimePeriod = function() {
   
     var now = new Date;
     for (var i=0; i<this.portfolio.portfolio.length; i++){
+		if (this.portfolio.portfolio[i].display=="yes"){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate); // "10/23/2003" 
 		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - pD ) / ( 365 * 24 * 3600 * 1000);
-
+	    }
 	}
     }
 }
@@ -352,24 +382,28 @@ Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
     
 }
 Reader.prototype.ComputeAnnualizedReturn = function(){
-    console.log("cSD_cAR 1:",this.currentStockData);
+//    console.log("cSD_cAR 1:",this.currentStockData);
     for (var i=0; i<this.portfolio.portfolio.length; i++){
+		if (this.portfolio.portfolio[i].display=="yes"){
 	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 	    this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio.portfolio[i].portfolioStocks[j] );
 //	    	console.log("aR",this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn);
 	}
+		}
     }
-    console.log("cSD_cAR 2:",this.currentStockData);
+//    console.log("cSD_cAR 2:",this.currentStockData);
 }
 
 Reader.prototype.CalculatePurchaseSharePrice = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
+		if (this.portfolio.portfolio[i].display=="yes"){
 	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 	    if (typeof this.portfolio.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
 		this.portfolio.portfolio[i].portfolioStocks[j].sharePrice = ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy) ) / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
 //		console.log("sharePrice",this.portfolio.portfolio[i].portfolioStocks[j].sharePrice);
 	    }
 	}
+		}
     }
 }
 
@@ -458,7 +492,7 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 				    });
 //		console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 		completionCounter++;
-		console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
+//		console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
 		//ensure that all requests complete before executing callback
 		if (completionCounter==that.uniqueSymbolAndDatesArray.length){
 		    //			console.log(JSON.stringify(that.currentStockData));
