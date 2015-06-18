@@ -36,7 +36,7 @@ Reader.prototype.callbackStack = function() {
     this.TotalPortfolioGains();
         this.TotalPortfolioPurchasePrice();
 //    console.log("output:",this.portfolio);
-    console.log(JSON.stringify(this.portfolio));
+//    console.log(JSON.stringify(this.portfolio));
 
 
 this.OutputDisplayedPortfolios();
@@ -441,6 +441,7 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
     }
 };
 
+//This is only used for our comparison to a standard. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
 Reader.prototype.GetHistoricalStockData = function(cb) {
     var that = this,
 	completionCounter = 0;
@@ -536,23 +537,51 @@ outputPortfolioArray.portfolio.push(this.portfolio.portfolio
   outputPortfolioArray.portfolio = this.portfolio.portfolio.filter( function(insidePortfolio) {
                                      return insidePortfolio.display == "yes";
                                    });
-console.log(outputPortfolioArray);
+//console.log(outputPortfolioArray);
 }
 
 
 Reader.prototype.RenderOutput = function() {
-var line = "<div><span class=\"\">{{ticker}}</span><span class=\"\">{{gain}}</span><span class=\"\">{{totalPurchasePrice}}</span><span class=\"\">{{ticker}}</span></div>";
+var line = "<div><span class=\"\">{{ticker}}</span><span class=\"\">{{shares}}</span><span class=\"\">{{totalPurchasePrice}}</span> <span class=\"\">{{purchaseDate}}</span><span class=\"\">{{commissionToBuy}}</span><span class=\"\">{{commissiontToSell}}</span><span class=\"\">{{holdingTimePeriodInYears}}</span><span class=\"\">{{dollarGain}}</span><span class=\"\">{{percentGain}}</span><span class=\"\">{{annualizedReturn}}</span> </div>";
 
 var source = "<p>Hello, my name is {{name}}. I am from {{hometown}}. I have " +
              "{{kids.length}} kids:</p>" +
              "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>";
-var template = hbs.compile(source);
+var template = hbs.compile(line);
 
 var data = { "name": "Alan", "hometown": "Somewhere, TX",
              "kids": [{"name": "Jimmy", "age": "12"}, {"name": "Sally", "age": "4"}]};
+    
 var result = template(data);
 
-console.log(result);
+        for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+//damn I want cool color coding via styles as well. not sure HBS' expression syntax is that fully featured to test numeric values
+		console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
+	    }
+	}
+//console.log(result);
+}
+
+Reader.prototype.AppendCurrentStockData = function() {
+        for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	    if (this.portfolio.portfolio[i].display=="yes"){
+		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		    var stockData = this.currentStockData.filter( function(item) {
+			return item.ticker === currentStockTicker; // 'this' context changes so I created currentStockTicker
+                    });
+		if ( stockData.length == 0 ){ console.log("shit:"+currentStockTicker);} else {
+		    this.portfolio.portfolio[i].portfolioStocks[j].currentPrice = stockData[0].currentPrice;
+			this.portfolio.portfolio[i].portfolioStocks[j].openPrice =stockData[0].openPrice;
+			this.portfolio.portfolio[i].portfolioStocks[j].prevClosePrice =stockData[0].prevClosePrice;
+			this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekHigh =stockData[0].fiftyTwoWeekHigh;
+			this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekLow =stockData[0].fiftyTwoWeekLow;
+			this.portfolio.portfolio[i].portfolioStocks[j].trend =stockData[0].trend;
+		}
+		}
+	    }
+	}
+}
 }
 
 module.exports = Reader
@@ -562,3 +591,8 @@ module.exports = Reader
 //how to track new purchases from old funds / sales? If I had sold POT to buy NFLX the purchaseDate would screw stuff up. I'd have to add in a new parameter to track things. I'd have to use the old date for the comparison (to SP500) but another date for the gain for that new purchase. 
 
 //It'd be nice to be able to tell the time distance from the 52 wk low and highs. It is better to be closer to the high (time wise) than the low. 
+
+// in resultant webpage : 
+//hover on page and ajax call loads company data into a tooltip
+//ajax call to download price graph
+//ajax call to db to generate price graph
