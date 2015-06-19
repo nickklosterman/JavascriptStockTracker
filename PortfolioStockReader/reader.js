@@ -1,7 +1,7 @@
 var fs = require('graceful-fs'),
     //    sqlite3 = require('sqlite3'), look at tumblr for sqlite stuff
-// npm install -save someNPMthingee
-hbs = require('handlebars'),
+    // npm install -save someNPMthingee
+    hbs = require('handlebars'),
     request = require('request');
 
 function Reader(parameters){
@@ -23,37 +23,38 @@ function Reader(parameters){
 Reader.prototype.callbackStack = function() {
     this.CalculateGains(); 
     this.PortfolioCalculateGains();
-  //    console.log("cSD_cbs 1:",this.currentStockData);
+    //    console.log("cSD_cbs 1:",this.currentStockData);
     this.ComputeAnnualizedReturn(); // this.currentStockData is getting jacked up somehow in here
-  //  console.log("cSD_cbs 2:",this.currentStockData);
-  this.TotalPortfolioGains();
-  this.TotalPortfolioPurchasePrice();
-  //    console.log("output:",this.portfolio);
-  //    console.log(JSON.stringify(this.portfolio));
-  this.AppendCurrentStockData();
-this.CalculatePortfolioPercentages();
+    //  console.log("cSD_cbs 2:",this.currentStockData);
+    this.TotalPortfolioGains();
+    this.TotalPortfolioPurchasePrice();
+    //    console.log("output:",this.portfolio);
+    //    console.log(JSON.stringify(this.portfolio));
+    this.AppendCurrentStockData();
+    this.CalculatePortfolioPercentages();
 
 
-this.OutputDisplayedPortfolios();
-//I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
-//or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
-//Or have the first operation be to only return the display = yes portfolios
+    //this.OutputDisplayedPortfolios();
 
-this.RenderOutput();
+    //I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
+    //or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
+    //Or have the first operation be to only return the display = yes portfolios
+
+    this.RenderOutput();
 };
 
 Reader.prototype.CheckComplete = function() {
     this.completionCounter+=1;
-//    console.log("cC:"+this.completionCounter);
+    //    console.log("cC:"+this.completionCounter);
     if (this.completionCounter==this.completionsNeeded){
-//	console.log("calling cbS");
+	//	console.log("calling cbS");
 	this.callbackStack();
     }
 
 };
 
 Reader.prototype.init = function() {
-        this.completionsNeeded = 2;
+    this.completionsNeeded = 1//2;
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.CreateListOfUniqueStockSymbols();
     this.CreateListOfUniquePurchaseDates();
@@ -64,20 +65,21 @@ Reader.prototype.init = function() {
     //Asynch call
     this.GetCurrentStockData(this.CheckComplete.bind(this));
     //Asynch call
-    this.GetHistoricalStockData(this.CheckComplete.bind(this));
-    var that = this;
-/*    
-// this.CalculatePurchaseSharePrice();
-console.log("this.portfolio");
-console.log(JSON.stringify(this.portfolio));
-console.log("this.stockList");
-console.log(JSON.stringify(this.stockList.sort()));
-console.log("this.purchaseDateList");
-console.log(JSON.stringify(this.purchaseDateList.sort()));
+//    this.GetHistoricalStockData(this.CheckComplete.bind(this));
+  
+    /*    
+  var that = this;
+    // this.CalculatePurchaseSharePrice();
+    console.log("this.portfolio");
+    console.log(JSON.stringify(this.portfolio));
+    console.log("this.stockList");
+    console.log(JSON.stringify(this.stockList.sort()));
+    console.log("this.purchaseDateList");
+    console.log(JSON.stringify(this.purchaseDateList.sort()));
 
-console.log("this.uniqueSymbolAndDatesArray");
+    console.log("this.uniqueSymbolAndDatesArray");
     console.log(JSON.stringify(this.uniqueSymbolAndDatesArray));
-*/
+    */
 };
 
 Reader.prototype.PrintUniqueTickers = function() {
@@ -110,7 +112,7 @@ Reader.prototype.CreateListOfUniqueStockSymbols = function() {
 		    }
 		}
 		if (foundFlag===false){
-                  this.stockList.push(this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
+                    this.stockList.push(this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
 		}
 	    }
 	}
@@ -130,8 +132,8 @@ Reader.prototype.CreateListOfUniquePurchaseDates = function() {
 		    }
 		}
 		if (foundFlag===false){
-		  
-                  this.purchaseDateList.push(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
+		    
+                    this.purchaseDateList.push(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
 		}
 	    }
 	}
@@ -161,7 +163,7 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     var month=today.getMonth()+1; 
     var year=today.getFullYear();
     var myDateString=year+"-"+month+"-"+day;
-//    console.log("stockList.length:"+this.stockList.length);
+    //    console.log("stockList.length:"+this.stockList.length);
     for (var i = 0; i< this.stockList.length; i++){
 	var requestOptions= {
 	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i] + '&f=l1opwt7',
@@ -181,31 +183,31 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 		}
 	    }
 	    //	    console.log(resp);
-//	    	    console.log(url);
+	    //	    	    console.log(url);
 	    //	    console.log(i);
 	    
-//	    console.log(that.stockList[i]+" " +body);
+	    //	    console.log(that.stockList[i]+" " +body);
 	    var split = body.replace(/\"/g,"").replace(/\n/,"").split(",");
 	    
 	    var lowHigh=split[3].split(" - "),
 		low=lowHigh[0] || "",
-	    high=lowHigh[1] || "";
+		high=lowHigh[1] || "";
 	    that.currentStockData.push({ticker:that.stockList[i],
-				 currentPrice:split[0],
-				 openPrice:split[1],
-				 prevClosePrice:split[2],
-				 fiftyTwoWeekLow:low,
-				 fiftyTwoWeekHigh:high,
-				 trend:split[4],
-				 date:myDateString
-				});
-//	    console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
+					currentPrice:parseFloat(split[0]),
+					openPrice:parseFloat(split[1])||null,
+					prevClosePrice:parseFloat(split[2])||null,
+					fiftyTwoWeekLow:parseFloat(low)||null,
+				       fiftyTwoWeekHigh:parseFloat(high)||null,
+					trend:split[4],
+					date:myDateString
+				       });
+	    //	    console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 	    completionCounter++;
 	    //ensure that all requests complete before executing callback
 	    if (completionCounter==that.stockList.length){
 		//		console.log(JSON.stringify(that.currentStockData));
-//		console.log("getCurrentStockData done");
-//		console.log("cSD:",that.currentStockData);
+		//		console.log("getCurrentStockData done");
+		//		console.log("cSD:",that.currentStockData);
 		if (cb) {
 		    cb();
 		}
@@ -221,26 +223,28 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 
 //Reader.prototype.CalculateDollarGains = function(){
 Reader.prototype.CalculateGains = function(){
-  //  console.log("0 cSD_cG:",this.currentStockData);
+    //  console.log("0 cSD_cG:",this.currentStockData);
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 		var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase();
-//		console.log("cSD_cG:",this.currentStockData);
+		//		console.log("cSD_cG:",this.currentStockData);
 		var stockData = this.currentStockData.filter( function(item) {
                     return item.ticker === currentStockTicker.toLowerCase(); // 'this' context changes so I created currentStockTicker
                 });
 		if ( stockData.length == 0 ){ console.log("shitCG:"+currentStockTicker);} else {
 		    //console.log(stockData[0].currentPrice);
-		    this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
-		    var temp = this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice);
-
+		    this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * (this.portfolio.portfolio[i].portfolioStocks[j].shares) - (this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
+		    
+		    var temp = (this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice );
 		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
+		    this.portfolio.portfolio[i].portfolioStocks[j].currentValue = stockData[0].currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
+		    
 		}
 	    }
 	}
     }
-//console.log(JSON.stringify(this.portfolio));
+    //console.log(JSON.stringify(this.portfolio));
 }
 
 Reader.prototype.TotalPortfolioGains = function() {
@@ -266,40 +270,44 @@ Reader.prototype.TotalPortfolioPurchasePrice = function() {
 }
 
 Reader.prototype.PortfolioCalculateGains = function(){
-  for (var i=0; i<this.portfolio.portfolio.length; i++){
-    var dailyGains = 0,
-        dailyLosses = 0
-    totalCommissionPaid = 0,
-    totalPurchasePrice = 0,
-      totalGainLoss = 0,
-          totalGains = 0,
-    totalLosses = 0, 
-    portfolioValue = 0;
-      if ( this.portfolio.portfolio[i].display == 'yes'){
-    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-      if ( this.portfolio.portfolio[i].portfolioStocks[j].dollarGain > 0) {
-        totalGains+=this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
-      } else {
-        totalLosses += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
-      }
-      totalGainLoss += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
-      totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionPaid;
-      totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
-      portfolioValue += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice + this.portfolio.portfolio[i].portfolioStocks[j].dollarGain - this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy ;
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	var dailyGains = 0,
+            dailyLosses = 0
+	totalCommissionPaid = 0,
+	totalPurchasePrice = 0,
+	totalGainLoss = 0,
+        totalGains = 0,
+	totalLosses = 0, 
+	portfolioValue = 0;
+	if ( this.portfolio.portfolio[i].display == 'yes'){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		if ( this.portfolio.portfolio[i].portfolioStocks[j].dollarGain > 0) {
+		    totalGains+=this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+		} else {
+		    totalLosses += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+		}
+		totalGainLoss += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
+		totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionPaid;
+		totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
+		portfolioValue += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice + this.portfolio.portfolio[i].portfolioStocks[j].dollarGain - this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy ;
 
+	    }
+	    this.portfolio.portfolio[i].portfolioGains = totalGainLoss;
+	    this.portfolio.portfolio[i].totalCommissionPad = totalCommissionPaid;
+	    this.portfolio.portfolio[i].totalPurchasePrice = totalPurchasePrice;
+	    this.portfolio.portfolio[i].portfolioValue = portfolioValue;
+	    
+	}
     }
-      this.portfolio.portfolio[i].portfolioGains = totalGainLoss;
-      }
-  }
 }
 
 Reader.prototype.CalculateHoldingTimePeriod = function() {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
- 
+    
     var now = new Date;
     for (var i=0; i<this.portfolio.portfolio.length; i++){
-		if (this.portfolio.portfolio[i].display=="yes"){
+	if (this.portfolio.portfolio[i].display=="yes"){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate); // "10/23/2003" 
 		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - pD ) / ( 365 * 24 * 3600 * 1000);
@@ -314,46 +322,46 @@ Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
     //console.log(stockItem);
     //I believe that I should take into account the commissionToSell in the calculation (and taxes) to truly calculate annualized return)
 
-  //  console.log("cSD.l:"+this.currentStockData.length);
+    //  console.log("cSD.l:"+this.currentStockData.length);
     //use filter to find matching stock https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
     var currentSharePriceArray = this.currentStockData.filter( function(value){
 	return value.ticker === stockItem.ticker.toLowerCase();
     });
     if (currentSharePriceArray.length > 0){
-//	console.log("cSPA[0]:"+currentSharePriceArray[0])
-    var endingValue = parseFloat(stockItem.shares) * parseFloat(currentSharePriceArray[0].currentPrice) /* - stockItem.commissionToSell */;
+	//	console.log("cSPA[0]:"+currentSharePriceArray[0])
+	var endingValue = stockItem.shares * (currentSharePriceArray[0].currentPrice) /* - stockItem.commissionToSell */;
 
-    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/pow
-    //    var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/this.CalculateHoldingTimePeriod(stockItem) )*100;
-  //  console.log(endingValue + " "+ stockItem.totalPurchasePrice+1 +" "+ stockItem.totalPurchasePrice + 1 + " " +stockItem.holdingTimePeriodInYears );
-	annualizedReturn = (Math.pow( ( endingValue - parseFloat(stockItem.totalPurchasePrice) ) / parseFloat(stockItem.totalPurchasePrice) + 1 , 1/stockItem.holdingTimePeriodInYears ) -1)*100;
+	//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/pow
+	//    var annualizedReturn = Math.pow( ( endingValue - stockItem.totalPurchasePrice ) / stockItem.totalPurchasePrice + 1 , 1/this.CalculateHoldingTimePeriod(stockItem) )*100;
+	//  console.log(endingValue + " "+ stockItem.totalPurchasePrice+1 +" "+ stockItem.totalPurchasePrice + 1 + " " +stockItem.holdingTimePeriodInYears );
+	annualizedReturn = (Math.pow( ( endingValue - (stockItem.totalPurchasePrice) ) / (stockItem.totalPurchasePrice) + 1 , 1/stockItem.holdingTimePeriodInYears ) -1)*100;
     }
     return annualizedReturn;
 };
 
 Reader.prototype.ComputeAnnualizedReturn = function(){
-//    console.log("cSD_cAR 1:",this.currentStockData);
+    //    console.log("cSD_cAR 1:",this.currentStockData);
     for (var i=0; i<this.portfolio.portfolio.length; i++){
-		if (this.portfolio.portfolio[i].display=="yes"){
-	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-	    this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio.portfolio[i].portfolioStocks[j] );
-//	    	console.log("aR",this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn);
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio.portfolio[i].portfolioStocks[j] );
+		//	    	console.log("aR",this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn);
+	    }
 	}
-		}
     }
-//    console.log("cSD_cAR 2:",this.currentStockData);
+    //    console.log("cSD_cAR 2:",this.currentStockData);
 };
 
 Reader.prototype.CalculatePurchaseSharePrice = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
-		if (this.portfolio.portfolio[i].display=="yes"){
-	for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-	    if (typeof this.portfolio.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
-		this.portfolio.portfolio[i].portfolioStocks[j].sharePrice = ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy) ) / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
-//		console.log("sharePrice",this.portfolio.portfolio[i].portfolioStocks[j].sharePrice);
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		if (typeof this.portfolio.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
+		    this.portfolio.portfolio[i].portfolioStocks[j].sharePrice = ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy) ) / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
+		    //		console.log("sharePrice",this.portfolio.portfolio[i].portfolioStocks[j].sharePrice);
+		}
 	    }
 	}
-		}
     }
 }
 
@@ -382,7 +390,7 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
     }
 };
 
-//This is only used for our comparison to a standard. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
+//This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
 Reader.prototype.GetHistoricalStockData = function(cb) {
     var that = this,
 	completionCounter = 0;
@@ -402,7 +410,7 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 	    "&e="+ day + 
 	    "&f="+ date[2] +
 	    "&g=&ignore=.csv"
-//	console.log(date +"myUrl",url);
+	//	console.log(date +"myUrl",url);
 	var requestOptions= {
 	    url:url,
 	    headers: {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11' }
@@ -432,22 +440,22 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 
 		
 		that.historicalStockData.push({ticker:that.uniqueSymbolAndDatesArray[i].ticker,
-				     date:stockData[0],
-				     openPrice:stockData[1],
-				     highPrice:stockData[2],
-				     lowPrice:stockData[3],
-				     closePrice:stockData[4],
-				     volume:stockData[5],
-				     adjClose:stockData[6]  // <-- adjClose is the split adjusted price
-				    });
-//		console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
+					       date:stockData[0],
+					       openPrice:parseFloat(stockData[1]),
+					       highPrice:parseFloat(stockData[2]),
+					       lowPrice:parseFloat(stockData[3]),
+					       closePrice:parseFloat(stockData[4]),
+					       volume:parseFloat(stockData[5]),
+					       adjClose:parseFloat(stockData[6])  // <-- adjClose is the split adjusted price
+					      });
+		//		console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 		completionCounter++;
-//		console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
+		//		console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
 		//ensure that all requests complete before executing callback
 		if (completionCounter==that.uniqueSymbolAndDatesArray.length){
 		    //			console.log(JSON.stringify(that.currentStockData));
-//		    console.log("getHistoricalStockData done");
-//		    console.log(JSON.stringify(that.historicalStockData));
+		    //		    console.log("getHistoricalStockData done");
+		    //		    console.log(JSON.stringify(that.historicalStockData));
 		    if (typeof cb==='function') {
 			cb();
 		    }
@@ -467,145 +475,183 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 
 
 Reader.prototype.OutputDisplayedPortfolios = function() {
-  var outputPortfolioArray = {portfolio:[]};//new Array
-  outputPortfolioArray.portfolio = this.portfolio.portfolio.filter( function(insidePortfolio) {
-                                     return insidePortfolio.display == "yes";
-                                   });
-//console.log(outputPortfolioArray);
+    var outputPortfolioArray = {portfolio:[]};//new Array
+    outputPortfolioArray.portfolio = this.portfolio.portfolio.filter( function(insidePortfolio) {
+        return insidePortfolio.display == "yes";
+    });
+//    console.log("l---:",outputPortfolioArray);
+    for (var i =0; i<outputPortfolioArray.portfolio.length;i++){
+	for (var j =0; j<outputPortfolioArray.portfolio[i].portfolioStocks.length;j++){
+//	    console.log(outputPortfolioArray.portfolio[i].portfolioStocks[j]);
+	}
+    }
 }
 
 
 Reader.prototype.RenderOutput = function() {
-var stockTemplate = "<div><span class=\"\">{{ticker}}</span>"
-                    + "<span class=\"\">{{shares}}</span>"
-                    + "<span class=\"\">{{totalPurchasePrice}}</span> "
-                    + "<span class=\"\">{{purchaseDate}}</span>"
-                    + "<span class=\"\">{{commissionToBuy}}</span>"
-                    + "<span class=\"\">{{commissiontToSell}}</span>"
-                    + "<span class=\"\">{{holdingTimePeriodInYears}}</span>"
-                    + "<span class=\"{{colorStyling }}\">{{dollarGain}}</span>"
-                    + "<span class=\"{{colorStyling }}\">{{percentGain}}</span> "
-                    + "<span class=\"{{colorStyling }}\">{{annualizedReturn}}</span> "
-                    + "<span class=\"\">{{currentPrice}}</span>  "
-                    + "<span class=\"\">{{openPrice}}</span>  "
-                    + "<span class=\"\">{{prevClosePrice}}</span>  "
-                    + "<span class=\"\">{{fiftyTwoWeeklow}}</span>  "
-                    + "<span class=\"\">{{fiftyTwoWeekHigh}}</span>  "
-                    + "<span class=\"\">{{trend}}</span>  </div>\n",
-stockTemplateTable = "<tr><td class=\"\">{{ticker}}</td>"
-                    + "<td class=\"\">{{shares}}</td>"
-                    + "<td class=\"\">{{totalPurchasePrice}}</td> "
-                    + "<td class=\"\">{{purchaseDate}}</td>"
-                    + "<td class=\"\">{{commissionToBuy}}</td>"
-                    + "<td class=\"\">{{commissiontToSell}}</td>"
-                    + "<td class=\"\">{{holdingTimePeriodInYears}}</td>"
-                    + "<td class=\"{{colorStyling }}\">{{dollarGain}}</td>"
-                    + "<td class=\"{{colorStyling }}\">{{percentGain}}</td> "
-                    + "<td class=\"{{colorStyling }}\">{{annualizedReturn}}</td> "
-                    + "<td class=\"\">{{currentPrice}}</td>  "
-                    + "<td class=\"\">{{openPrice}}</td>  "
-                    + "<td class=\"\">{{prevClosePrice}}</td>  "
-                    + "<td class=\"\">{{fiftyTwoWeeklow}}</td>  "
-                    + "<td class=\"\">{{fiftyTwoWeekHigh}}</td>  "
-                    + "<td class=\"\">{{trend}}</td> </tr>\n",
+    var stockTemplate = "<div><span class=\"\">{{ticker}}</span>"
+        + "<span class=\"\">{{shares}}</span>"
+        + "<span class=\"\">{{totalPurchasePrice}}</span> "
+        + "<span class=\"\">{{purchaseDate}}</span>"
+        + "<span class=\"\">{{commissionToBuy}}</span>"
+        + "<span class=\"\">{{commissionToSell}}</span>"
+        + "<span class=\"\">{{holdingTimePeriodInYears}}</span>"
+        + "<span class=\"{{colorStyling }}\">{{dollarGain}}</span>"
+        + "<span class=\"{{colorStyling }}\">{{percentGain}}</span> "
+        + "<span class=\"{{colorStyling }}\">{{annualizedReturn}}</span> "
+        + "<span class=\"\">{{currentPrice}}</span>  "
+        + "<span class=\"\">{{openPrice}}</span>  "
+        + "<span class=\"\">{{prevClosePrice}}</span>  "
+        + "<span class=\"\">{{fiftyTwoWeekLow}}</span>  "
+        + "<span class=\"\">{{fiftyTwoWeekHigh}}</span>  "
+        + "<span class=\"\">{{trend}}</span>  </div>\n",
+	stockTemplateTable = "<tr><td class=\"\">{{ticker}}</td>"
+	+ "<td class=\"\">{{shares}}</td>"
+	+ "<td class=\"\">{{totalPurchasePrice}}</td> "
+	+ "<td class=\"{{colorStylingPositive dollarGain}}\">{{dollarGain}}</td>"
+    	+ "<td class=\"\">{{currentValue}}</td> "
+	+ "<td class=\"\">{{purchaseDate}}</td>"
+	+ "<td class=\"\">{{commissionToBuy}}</td>"
+	+ "<td class=\"\">{{commissionToSell}}</td>"
+	+ "<td class=\"\">{{holdingTimePeriodInYears}}</td>"
+	+ "<td class=\"{{colorStylingPositive dailyGainLoss}}\">{{dailyGainLoss}}</td>"
+	+ "<td class=\"{{colorStylingPositive percentGain}}\">{{percentGain}}</td> "
+	+ "<td class=\"{{colorStylingPositive annualizedReturn}}\">{{annualizedReturn}}</td> "
+	+ "<td class=\"\">{{currentPrice}}</td>  "
+	+ "<td class=\"\">{{openPrice}}</td>  "
+	+ "<td class=\"\">{{prevClosePrice}}</td>  "
+	+ "<td class=\"\">{{fiftyTwoWeekLow}}</td>  "
+	+ "<td class=\"\">{{fiftyTwoWeekHigh}}</td>  "
+	+ "<td class=\"\">{{fiftyTwoWeekPercentage}}</td>  "
+	+ "<td class=\"\">{{fiftyTwoWeekSpread}}</td>  "
+	+ "<td class=\"\">{{trend}}</td> </tr>\n",
+	
+	portfolioTemplate = "<div>{{portfolioName}}</div>"
+        + " <div>{{date}}</div><div>{{portfolioGains}}</div>"+
+	"<ul>{{#portfolioStocks}}<li>{{ticker}} is {{currentPrice}}</li>{{/portfolioStocks}}</ul>",
 
- portfolioTemplate = "<div>{{portfolioName}}</div>"
-                     + " <div>{{date}}</div><div>{{portfolioGains}}</div>"+
-"<ul>{{#portfolioStocks}}<li>{{ticker}} is {{currentPrice}}</li>{{/portfolioStocks}}</ul>",
+	source = "<p>Hello, my name is {{name}}. I am from {{hometown}}. I have " +
+        "{{kids.length}} kids:</p>" +
+        "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>",
+	template,
 
- source = "<p>Hello, my name is {{name}}. I am from {{hometown}}. I have " +
-             "{{kids.length}} kids:</p>" +
-             "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>",
- template,
+	mySwitch = 2;
 
- mySwitch = 2;
+    hbs.registerHelper("colorStylingPositive", function(value) {
+	//	console.log((parseFloat(value) > 0)+ " "+ value);
+	return parseFloat(value) > 0 ? "positive" : "negative";
+    });
 
-hbs.registerHelper("colorStyling", function(value) {
-return parseFloat(value) > 0 ? "positive" : "negative";
-});
+    hbs.registerHelper("colorStylingPercent", function(value) {
+	return value > 1 ? "positive":"negative";
+    });
+    console.log("<!DOCTYPE html>"
+		+ "<html>"
+		+ "<head><title>date</title> \n"
+		+ "<style type=\"text/css\"> \n"
+		+ ".positive { background-color:green } \n"
+		+ ".negative { background-color:red } \n"
+		+ "tr:hover { background-color: #b8d1f3 } \n"
+		+ "</style> \n"
+		+ "</head><body>");
 
-console.log("<!DOCTYPE html>"
-            + "<html>"
-            + "<head><title>date</title> \n"
-           + "<style type=\"text/css\"> \n"
-           + ".positive {background-color:green}; \n"
-           + ".negative {background-color:red}; \n"
-           + "</style> \n"
-            + "</head><body>");
-
-switch(mySwitch) {
-  case 0:
-  template = hbs.compile(stockTemplate);
-  for ( var i=0;i<this.portfolio.portfolio.length;i++){
-    if (this.portfolio.portfolio[i].display == "yes") {
-      for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-        //damn I want cool color coding via styles as well. not sure HBS' expression syntax is that fully featured to test numeric values
-        console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
-      }
-    }
-  }
-  break;
-  case 1:
-  template = hbs.compile(portfolioTemplate);
-  for ( var i=0;i<this.portfolio.portfolio.length;i++){
-    if (this.portfolio.portfolio[i].display == "yes") {
-      console.log(template(this.portfolio.portfolio[i]));
-    }
-  }
-  break;
-  case 2:
-console.log("<table>");
-  template = hbs.compile(stockTemplateTable);
-  for ( var i=0;i<this.portfolio.portfolio.length;i++){
-    if (this.portfolio.portfolio[i].display == "yes") {
-      for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-      console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
-      }
-    }
-  }
-console.log("</table>");
-break;
-}
-
-//console.log(result);
-console.log("</body></html>");
-}
-
-Reader.prototype.AppendCurrentStockData = function() {
-        for ( var i=0;i<this.portfolio.portfolio.length;i++){
-	    if (this.portfolio.portfolio[i].display=="yes"){
+    switch(mySwitch) {
+    case 0:
+	template = hbs.compile(stockTemplate);
+	for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	    if (this.portfolio.portfolio[i].display == "yes") {
 		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-                  var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker;
-		    var stockData = this.currentStockData.filter( function(item) {
-			return item.ticker === currentStockTicker.toLowerCase(); // 'this' context changes so I created currentStockTicker
-                    });
-		if ( stockData.length == 0 ){ console.log("shitACSD:"+currentStockTicker);} else {
-		    this.portfolio.portfolio[i].portfolioStocks[j].currentPrice = stockData[0].currentPrice;
-			this.portfolio.portfolio[i].portfolioStocks[j].openPrice =stockData[0].openPrice;
-			this.portfolio.portfolio[i].portfolioStocks[j].prevClosePrice =stockData[0].prevClosePrice;
-			this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekHigh =stockData[0].fiftyTwoWeekHigh;
-			this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekLow =stockData[0].fiftyTwoWeekLow;
-		this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekPercentage = ( stockData[0].currentPrice  - stockData[0].fiftyTwoWeekLow ) / ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow );
-		this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekSpread = ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow ) /  stockData[0].currentPrice;
-		this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss = ( stockData[0].currentPrice - stockData[0].prevClosePrice ) * this.portfolio.portfolio[i].portfolioStocks[j].shares;
-
-			this.portfolio.portfolio[i].portfolioStocks[j].trend =stockData[0].trend;
-		}
+		    //damn I want cool color coding via styles as well. not sure HBS' expression syntax is that fully featured to test numeric values
+		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
 		}
 	    }
 	}
+	break;
+    case 1:
+	template = hbs.compile(portfolioTemplate);
+	for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	    if (this.portfolio.portfolio[i].display == "yes") {
+		console.log(template(this.portfolio.portfolio[i]));
+	    }
+	}
+	break;
+    case 2:
+	console.log("<table>");
+	console.log("<tr><td class=\"\">ticker</td>"
+                    + "<td class=\"\">shares</td>"
+                    + "<td class=\"\">Purchase Price</td> "
+                    + "<td class=\"colorStylingPositive dollarGain\">dollar Gain</td>"
+		    + "<td class=\"\">Curr Value</td> "
+                    + "<td class=\"\">Purchase</td>"
+                    + "<td class=\"\">Buy</td>"
+                    + "<td class=\"\">Sell</td>"
+                    + "<td class=\"\">Years Held</td>"
+		    + "<td class=\"\">Daily +/-</td>"
+                    + "<td class=\"colorStylingPercent percentGain\">percent Gain</td> "
+                    + "<td class=\"colorStylingPositive annualizedReturn\">annualizedReturn</td> "
+                    + "<td class=\"\">currentPrice</td>  "
+                    + "<td class=\"\">Open</td>  "
+                    + "<td class=\"\">Prev Close</td>  "
+                    + "<td class=\"\">52 Low</td>  "
+                    + "<td class=\"\">52 High</td>  "
+		    + "<td class=\"\">52 Pct</td>  "
+		    + "<td class=\"\">52 Sprd</td>  "
+                    + "<td class=\"\">trend</td> </tr>\n");
+	template = hbs.compile(stockTemplateTable);
+	for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	    if (this.portfolio.portfolio[i].display == "yes") {
+		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
+		}
+	    }
+	}
+	console.log("</table>");
+	break;
+    }
+
+    //console.log(result);
+    console.log("</body></html>");
+}
+
+Reader.prototype.AppendCurrentStockData = function() {
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+                var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker;
+		var stockData = this.currentStockData.filter( function(item) {
+		    return item.ticker === currentStockTicker.toLowerCase(); // 'this' context changes so I created currentStockTicker
+                });
+		if ( stockData.length == 0 ){ console.log("shitACSD:"+currentStockTicker);} else {
+		    this.portfolio.portfolio[i].portfolioStocks[j].currentPrice = stockData[0].currentPrice;
+		    this.portfolio.portfolio[i].portfolioStocks[j].openPrice =stockData[0].openPrice;
+		    this.portfolio.portfolio[i].portfolioStocks[j].prevClosePrice =stockData[0].prevClosePrice;
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekHigh =stockData[0].fiftyTwoWeekHigh;
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekLow =stockData[0].fiftyTwoWeekLow;
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekPercentage = ( stockData[0].currentPrice  - stockData[0].fiftyTwoWeekLow ) / ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow );
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekSpread = ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow ) /  stockData[0].currentPrice;
+		    this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss = ( stockData[0].currentPrice - stockData[0].prevClosePrice ) * this.portfolio.portfolio[i].portfolioStocks[j].shares;
+
+		    this.portfolio.portfolio[i].portfolioStocks[j].trend =stockData[0].trend;
+		}
+	    }
+	}
+    }
 }
 
 Reader.prototype.CalculatePortfolioPercentages = function() {
-  for ( var i=0;i<this.portfolio.portfolio.length;i++){
-    if (this.portfolio.portfolio[i].display=="yes"){
-      for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-        this.portfolio.portfolio[i].portfolioStocks[j].percentageOfPortfolio = ( ( this.portfolio.portfolio[i].portfolioStocks[j].shares + this.portfolio.portfolio[i].portfolioStocks[j].shares) / this.portfolio.portfolio[i].portfolioValue ) * 100; 
-      }
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		this.portfolio.portfolio[i].portfolioStocks[j].percentageOfPortfolio = ( ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].currentPrice) + this.portfolio.portfolio[i].portfolioStocks[j].shares) / this.portfolio.portfolio[i].portfolioValue ) * 100; 
+	    }
+	}
     }
-  }
 }
 
+//http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 module.exports = Reader
 
