@@ -21,6 +21,7 @@ function Reader(parameters){
 };
 
 Reader.prototype.callbackStack = function() {
+    this.AppendCurrentStockData();
     this.CalculateGains(); 
     this.PortfolioCalculateGains();
     //    console.log("cSD_cbs 1:",this.currentStockData);
@@ -30,11 +31,11 @@ Reader.prototype.callbackStack = function() {
     this.TotalPortfolioPurchasePrice();
     //    console.log("output:",this.portfolio);
     //    console.log(JSON.stringify(this.portfolio));
-    this.AppendCurrentStockData();
+//    this.AppendCurrentStockData();
     this.CalculatePortfolioPercentages();
 
 
-    //this.OutputDisplayedPortfolios();
+//  this.OutputDisplayedPortfolios();
 
     //I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
     //or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
@@ -272,7 +273,9 @@ Reader.prototype.TotalPortfolioPurchasePrice = function() {
 Reader.prototype.PortfolioCalculateGains = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	var dailyGains = 0,
-            dailyLosses = 0
+            dailyLosses = 0,
+totalDailyGains = 0,
+totalDailyLosses = 0, 
 	totalCommissionPaid = 0,
 	totalPurchasePrice = 0,
 	totalGainLoss = 0,
@@ -286,14 +289,27 @@ Reader.prototype.PortfolioCalculateGains = function(){
 		} else {
 		    totalLosses += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
 		}
+
+		if ( this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss > 0) {
+		    totalDailyGains+=this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss;
+		} else {
+		    totalDailyLosses += this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss;
+		}
+//		    totalDailyLosses += this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss;
+
 		totalGainLoss += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
-		totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionPaid;
+		totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy;
 		totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
 		portfolioValue += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice + this.portfolio.portfolio[i].portfolioStocks[j].dollarGain - this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy ;
 
 	    }
-	    this.portfolio.portfolio[i].portfolioGains = totalGainLoss;
-	    this.portfolio.portfolio[i].totalCommissionPad = totalCommissionPaid;
+	    this.portfolio.portfolio[i].totalDailyGains = totalDailyGains;
+	    this.portfolio.portfolio[i].totalDailyLosses = totalDailyLosses;
+
+	    this.portfolio.portfolio[i].totalGains = totalGains;
+	    this.portfolio.portfolio[i].totalLosses = totalLosses;
+	    this.portfolio.portfolio[i].totalGainLoss = totalGainLoss;
+	    this.portfolio.portfolio[i].totalCommissionPaid = totalCommissionPaid;
 	    this.portfolio.portfolio[i].totalPurchasePrice = totalPurchasePrice;
 	    this.portfolio.portfolio[i].portfolioValue = portfolioValue;
 	    
@@ -479,7 +495,9 @@ Reader.prototype.OutputDisplayedPortfolios = function() {
     outputPortfolioArray.portfolio = this.portfolio.portfolio.filter( function(insidePortfolio) {
         return insidePortfolio.display == "yes";
     });
-//    console.log("l---:",outputPortfolioArray);
+
+    console.log("l---:",outputPortfolioArray);
+
     for (var i =0; i<outputPortfolioArray.portfolio.length;i++){
 	for (var j =0; j<outputPortfolioArray.portfolio[i].portfolioStocks.length;j++){
 //	    console.log(outputPortfolioArray.portfolio[i].portfolioStocks[j]);
@@ -534,6 +552,19 @@ Reader.prototype.RenderOutput = function() {
         "{{kids.length}} kids:</p>" +
         "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>",
 	template,
+
+        portfolioStatsTemplate = "<tr><td colspan=\"4\">Portfolio Worth</td><td colspan=\"4\">{{portfolioValue}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Gains </td><td colspan=\"4\">{{totalGains}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Losses </td><td colspan=\"4\">{{totalLosses}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Total Gains </td><td colspan=\"4\">{{totalGainLoss}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Commission Paid </td><td colspan=\"4\">{{totalCommissionPaid}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Total Purchase Price </td><td colspan=\"4\">{{totalPurchasePrice}}</td><td colspan=\"12\"></td></tr>"
+
+                                 + "<tr><td colspan=\"4\">Daily Gains</td><td colspan=\"4\">{{totalDailyGains}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Daily Losses </td><td colspan=\"4\">{{totalDailyLosses}}</td><td colspan=\"12\"></td></tr>"
+
+                                 + "<tr><td colspan=\"4\">PortfolioWorth </td><td colspan=\"4\">{{portfolioValue}}</td><td colspan=\"12\"></td></tr>"
+,
 
 	mySwitch = 2;
 
@@ -603,6 +634,8 @@ Reader.prototype.RenderOutput = function() {
 		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
 		}
+var template2 = hbs.compile(portfolioStatsTemplate);
+console.log(template2(this.portfolio.portfolio[i]));
 	    }
 	}
 	console.log("</table>");
@@ -671,7 +704,6 @@ module.exports = Reader
 //graph percentages; log over time growth of holdings AAPL went from X% of my portfolio to Y%
 //animate a pie chart over time to show growth; or hover dynamically generates the pie chart such that as you scroll through time you see it change.
 //have yearly snapshots of the data with the graph below each bracketed year
-
 
 // I want to be able to view trends.
 
