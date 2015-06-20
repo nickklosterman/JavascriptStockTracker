@@ -35,13 +35,14 @@ Reader.prototype.callbackStack = function() {
     this.CalculatePortfolioPercentages();
 
 
-//  this.OutputDisplayedPortfolios();
+//  this.OutputDisplayedPortfolios(); //for json output
 
     //I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
     //or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
     //Or have the first operation be to only return the display = yes portfolios
 
-    this.RenderOutput();
+//    this.RenderOutput(); //for html output
+    this.ParseForPieChart("shares","ticker");
 };
 
 Reader.prototype.CheckComplete = function() {
@@ -524,47 +525,44 @@ Reader.prototype.RenderOutput = function() {
         + "<span class=\"\">{{fiftyTwoWeekHigh}}</span>  "
         + "<span class=\"\">{{trend}}</span>  </div>\n",
 	stockTemplateTable = "<tr><td class=\"\">{{ticker}}</td>"
-	+ "<td class=\"\">{{shares}}</td>"
-	+ "<td class=\"\">{{totalPurchasePrice}}</td> "
-	+ "<td class=\"{{colorStylingPositive dollarGain}}\">{{dollarGain}}</td>"
-    	+ "<td class=\"\">{{currentValue}}</td> "
+	+ "<td class=\"currency\">{{shares}}</td>"
+	+ "<td class=\"number \">${{formatCurrency totalPurchasePrice}}</td> "
+	+ "<td class=\"number {{ colorStylingPositive dollarGain}}\">${{formatCurrency dollarGain}}</td>"
+    	+ "<td class=\"number \">${{formatCurrency currentValue}}</td> "
 	+ "<td class=\"\">{{purchaseDate}}</td>"
-	+ "<td class=\"\">{{commissionToBuy}}</td>"
-	+ "<td class=\"\">{{commissionToSell}}</td>"
-	+ "<td class=\"\">{{holdingTimePeriodInYears}}</td>"
-	+ "<td class=\"{{colorStylingPositive dailyGainLoss}}\">{{dailyGainLoss}}</td>"
-	+ "<td class=\"{{colorStylingPositive percentGain}}\">{{percentGain}}</td> "
-	+ "<td class=\"{{colorStylingPositive annualizedReturn}}\">{{annualizedReturn}}</td> "
-	+ "<td class=\"\">{{currentPrice}}</td>  "
-	+ "<td class=\"\">{{openPrice}}</td>  "
-	+ "<td class=\"\">{{prevClosePrice}}</td>  "
-	+ "<td class=\"\">{{fiftyTwoWeekLow}}</td>  "
-	+ "<td class=\"\">{{fiftyTwoWeekHigh}}</td>  "
-	+ "<td class=\"\">{{fiftyTwoWeekPercentage}}</td>  "
-	+ "<td class=\"\">{{fiftyTwoWeekSpread}}</td>  "
+	+ "<td class=\"number \">${{formatCurrency commissionToBuy}}</td>"
+	+ "<td class=\"number \">${{formatCurrency commissionToSell}}</td>"
+	+ "<td class=\"number \">{{formatNumber_TwoDecimal holdingTimePeriodInYears}}</td>"
+	+ "<td class=\"number {{colorStylingPositive dailyGainLoss}}\">${{formatCurrency dailyGainLoss}}</td>"
+	+ "<td class=\"number {{colorStylingPositive percentGain}}\">{{formatNumber_TwoDecimal percentGain}}%</td> "
+	+ "<td class=\"number {{colorStylingPositive annualizedReturn}}\">{{formatNumber_TwoDecimal annualizedReturn}}%</td> "
+	+ "<td class=\"number \">${{formatCurrency currentPrice}}</td>  "
+	+ "<td class=\"number \">${{formatCurrency openPrice}}</td>  "
+	+ "<td class=\"number \">${{formatCurrency prevClosePrice}}</td>  "
+	+ "<td class=\"number \">{{formatNumber_TwoDecimal percentageOfPortfolio}}%</td>  "
+	+ "<td class=\"number \">${{formatCurrency fiftyTwoWeekLow}}</td>  "
+	+ "<td class=\"number \">${{formatCurrency fiftyTwoWeekHigh}}</td>  "
+	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekPercentage}}%</td>  "
+	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekSpread}}%</td>  "
 	+ "<td class=\"\">{{trend}}</td> </tr>\n",
 	
 	portfolioTemplate = "<div>{{portfolioName}}</div>"
         + " <div>{{date}}</div><div>{{portfolioGains}}</div>"+
 	"<ul>{{#portfolioStocks}}<li>{{ticker}} is {{currentPrice}}</li>{{/portfolioStocks}}</ul>",
 
-	source = "<p>Hello, my name is {{name}}. I am from {{hometown}}. I have " +
-        "{{kids.length}} kids:</p>" +
-        "<ul>{{#kids}}<li>{{name}} is {{age}}</li>{{/kids}}</ul>",
 	template,
 
-        portfolioStatsTemplate = "<tr><td colspan=\"4\">Portfolio Worth</td><td colspan=\"4\">{{portfolioValue}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Gains </td><td colspan=\"4\">{{totalGains}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Losses </td><td colspan=\"4\">{{totalLosses}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Total Gains </td><td colspan=\"4\">{{totalGainLoss}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Commission Paid </td><td colspan=\"4\">{{totalCommissionPaid}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Total Purchase Price </td><td colspan=\"4\">{{totalPurchasePrice}}</td><td colspan=\"12\"></td></tr>"
+        portfolioStatsTemplate = "<tr><td colspan=\"4\">Portfolio Worth</td><td colspan=\"4\">${{ formatCurrency portfolioValue}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Gains </td><td colspan=\"4\">${{ formatCurrency totalGains}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Losses </td><td colspan=\"4\">${{ formatCurrency totalLosses}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Total Gains </td><td colspan=\"4\">${{ formatCurrency totalGainLoss}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Commission Paid </td><td colspan=\"4\">${{ formatCurrency totalCommissionPaid}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Total Purchase Price </td><td colspan=\"4\">${{ formatCurrency totalPurchasePrice}}</td><td colspan=\"12\"></td></tr>"
 
-                                 + "<tr><td colspan=\"4\">Daily Gains</td><td colspan=\"4\">{{totalDailyGains}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Daily Losses </td><td colspan=\"4\">{{totalDailyLosses}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Daily Gains</td><td colspan=\"4\">${{ formatCurrency totalDailyGains}}</td><td colspan=\"12\"></td></tr>"
+                                 + "<tr><td colspan=\"4\">Daily Losses </td><td colspan=\"4\">${{ formatCurrency totalDailyLosses}}</td><td colspan=\"12\"></td></tr>"
 
-                                 + "<tr><td colspan=\"4\">PortfolioWorth </td><td colspan=\"4\">{{portfolioValue}}</td><td colspan=\"12\"></td></tr>"
-,
+                                 + "<tr><td colspan=\"4\">PortfolioWorth </td><td colspan=\"4\">${{ formatCurrency portfolioValue}}</td><td colspan=\"12\"></td></tr>",
 
 	mySwitch = 2;
 
@@ -576,12 +574,25 @@ Reader.prototype.RenderOutput = function() {
     hbs.registerHelper("colorStylingPercent", function(value) {
 	return value > 1 ? "positive":"negative";
     });
+    hbs.registerHelper("formatCurrency",function(value){
+	if (value == null) {
+	    return value  
+	}
+	return numberWithCommas(value.toFixed(2));
+    });
+    hbs.registerHelper("formatNumber_TwoDecimal",function(value){
+	if (value == null) {
+	    return null
+	}
+	return value.toFixed(2);
+    });
     console.log("<!DOCTYPE html>"
 		+ "<html>"
 		+ "<head><title>date</title> \n"
 		+ "<style type=\"text/css\"> \n"
 		+ ".positive { background-color:green } \n"
 		+ ".negative { background-color:red } \n"
+		+ ".number { text-align:right } \n"
 		+ "tr:hover { background-color: #b8d1f3 } \n"
 		+ "</style> \n"
 		+ "</head><body>");
@@ -607,38 +618,40 @@ Reader.prototype.RenderOutput = function() {
 	}
 	break;
     case 2:
-	console.log("<table>");
-	console.log("<tr><td class=\"\">ticker</td>"
-                    + "<td class=\"\">shares</td>"
-                    + "<td class=\"\">Purchase Price</td> "
-                    + "<td class=\"colorStylingPositive dollarGain\">dollar Gain</td>"
-		    + "<td class=\"\">Curr Value</td> "
-                    + "<td class=\"\">Purchase</td>"
-                    + "<td class=\"\">Buy</td>"
-                    + "<td class=\"\">Sell</td>"
-                    + "<td class=\"\">Years Held</td>"
-		    + "<td class=\"\">Daily +/-</td>"
-                    + "<td class=\"colorStylingPercent percentGain\">percent Gain</td> "
-                    + "<td class=\"colorStylingPositive annualizedReturn\">annualizedReturn</td> "
-                    + "<td class=\"\">currentPrice</td>  "
-                    + "<td class=\"\">Open</td>  "
-                    + "<td class=\"\">Prev Close</td>  "
-                    + "<td class=\"\">52 Low</td>  "
-                    + "<td class=\"\">52 High</td>  "
-		    + "<td class=\"\">52 Pct</td>  "
-		    + "<td class=\"\">52 Sprd</td>  "
-                    + "<td class=\"\">trend</td> </tr>\n");
 	template = hbs.compile(stockTemplateTable);
 	for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	    if (this.portfolio.portfolio[i].display == "yes") {
+		console.log("<table>");
+		console.log("<tr><td class=\"\">ticker</td>"
+			    + "<td class=\"\">shares</td>"
+			    + "<td class=\"\">Purchase Price</td> "
+			    + "<td class=\"colorStylingPositive dollarGain\">Gain</td>"
+			    + "<td class=\"\">Curr Value</td> "
+			    + "<td class=\"\">Purchase</td>"
+			    + "<td class=\"\">Buy</td>"
+			    + "<td class=\"\">Sell</td>"
+			    + "<td class=\"\">Years Held</td>"
+			    + "<td class=\"\">Daily +/-</td>"
+			    + "<td class=\"colorStylingPercent percentGain\">pct Gain</td> "
+			    + "<td class=\"colorStylingPositive annualizedReturn\">ann Return</td> "
+			    + "<td class=\"\">currentPrice</td>  "
+			    + "<td class=\"\">Open</td>  "
+			    + "<td class=\"\">Prev Close</td>  "
+			    + "<td class=\"\">Pct of Prtflo</td>  "
+			    + "<td class=\"\">52 Low</td>  "
+			    + "<td class=\"\">52 High</td>  "
+			    + "<td class=\"\">52 Pct</td>  "
+			    + "<td class=\"\">52 Sprd</td>  "
+			    + "<td class=\"\">trend</td> </tr>\n");
 		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
 		}
-var template2 = hbs.compile(portfolioStatsTemplate);
-console.log(template2(this.portfolio.portfolio[i]));
+		var template2 = hbs.compile(portfolioStatsTemplate);
+		console.log(template2(this.portfolio.portfolio[i]));
+		console.log("</table>");
 	    }
 	}
-	console.log("</table>");
+
 	break;
     }
 
@@ -675,16 +688,42 @@ Reader.prototype.CalculatePortfolioPercentages = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-		this.portfolio.portfolio[i].portfolioStocks[j].percentageOfPortfolio = ( ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].currentPrice) + this.portfolio.portfolio[i].portfolioStocks[j].shares) / this.portfolio.portfolio[i].portfolioValue ) * 100; 
+		this.portfolio.portfolio[i].portfolioStocks[j].percentageOfPortfolio = ( (this.portfolio.portfolio[i].portfolioStocks[j].currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares) / this.portfolio.portfolio[i].portfolioValue ) * 100; 
 	    }
 	}
     }
 }
 
+Reader.prototype.ParseForPieChart = function(valueParam,labelParam) {
+//http://www.chartjs.org/docs/#doughnut-pie-chart
+
+    var outputArray = new Array(),
+    colorArray=["#000","#111","#222","#333","#444","#555","#666","#777","#888","#999","#aaa","#bbb","#ccc","#ddd","#eee","#fff","#f00","#0f0","#00f","#f0f","#a00","#0a0","#00a","#a0a","#b0b","#c0c","#d0d"];
+//    var i = 5; //5 = the Scottrade brokerage acct
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes" && this.portfolio.portfolio[i].portfolioStocks.length > 14){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+//		var     obj = {highlight: "#FF00BB", value:"",color:"#333",label:""};
+		var     obj = {highlight: "#FF00BB", value:"", label:""};
+
+		obj.value=this.portfolio.portfolio[i].portfolioStocks[j][valueParam];
+		obj.label=this.portfolio.portfolio[i].portfolioStocks[j][labelParam].toUpperCase();
+		obj.color=colorArray[j];
+		//I need an array of colors or something (a theme) to use for nice colors. I suppose I could come up with a rainbow and then based on the number of datapoints assign the colors using some algo to index in or create a color
+		console.log(obj)
+		outputArray.push(obj);
+	    }
+	}
+    }
+
+    console.log(":",outputArray);
+};
+
 //http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
 function numberWithCommas(x) {
+   
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
+} //http://stackoverflow.com/questions/11832914/round-to-at-most-2-decimal-places-in-javascript
 
 module.exports = Reader
 
@@ -722,3 +761,18 @@ module.exports = Reader
 // -add a stock class / category 
 // -place notes in an array such that can easily cycle through them for display
 // -add a comparator to each. This could be done via the class/category attribute such that each stock can be copmared to something provided benchmark.  Or the overall portfolio could have a comparator attached to it that is applied to all children. 
+
+//Do some cool magic where if there are multiple purchases of the same stock that the data is entered as an array and the data is displayed in aggregate with a + next to it showing that you can expand to show the individual purchases. 
+
+//allow resorting: based on which column clicked, resort.
+
+//instead of computing the percentage of the portfolio that the holding is, heat map color code the portfolio values. This would make more sense if the output was organized by percentage of holdings in each.
+
+// create a pie chart of the holding and when you hover over the slice in the pie, it highlights the relevant line in the data. 
+
+// create a graphic timeline showing a bar when the investment was made with the purchase price and current value as a stacked graph so that you see the power of compound interest.  Or show how over time that initial investment grew ( I suppose this is just a normal "flow" graph of time series data)
+// I do like the idea of having the one blip waaay back in time that has a big height due to compounding.  II........i...i..i <-- that is supposed to be that sort of time series graph I'm talking about. 
+
+//a flipcard view of your stocks. Have the cards colored based on how they are doing. flip the card over (ad nauseum) to see different stats.  One view could be the company profile etc. Seems like a gimmicky thing to do but people like gimmicky shit. 
+
+// http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%3D%22' + stocksUrl + '%22&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=  ; use %20 btw individual stock ticker symbols  got this from http://codepen.io/alexerlandsson/pen/YXXzLR
