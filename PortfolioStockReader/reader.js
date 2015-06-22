@@ -43,6 +43,7 @@ Reader.prototype.callbackStack = function() {
 
 //    this.RenderOutput(); //for html output
     this.ParseForPieChart("shares","ticker");
+    this.ParseForPieChart("totalPurchasePrice","ticker"); //is there an easier way such that I could do a watch on the datasource and refresh the graph? That way I don't have to have multiple graphs that are displayed  or hidden based on what data is selected.
 };
 
 Reader.prototype.CheckComplete = function() {
