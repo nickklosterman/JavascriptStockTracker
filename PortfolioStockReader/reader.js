@@ -7,6 +7,7 @@ var fs = require('graceful-fs'),
 function Reader(parameters){
     this.currentStockData=new Array();    
     this.historicalStockData=new Array();
+this.comparisonStockData=new Array();
     this.uniqueSymbolAndDatesArray=new Array();
     this.outputDB=parameters['databaseName'] || 'temp.sqlite3';
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
@@ -56,7 +57,7 @@ Reader.prototype.CheckComplete = function() {
 };
 
 Reader.prototype.init = function() {
-    this.completionsNeeded = 1//2;
+    this.completionsNeeded = 2;
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.CreateListOfUniqueStockSymbols();
     this.CreateListOfUniquePurchaseDates();
@@ -67,7 +68,7 @@ Reader.prototype.init = function() {
     //Asynch call
     this.GetCurrentStockData(this.CheckComplete.bind(this));
     //Asynch call
-//    this.GetHistoricalStockData(this.CheckComplete.bind(this));
+    this.GetHistoricalStockData(this.CheckComplete.bind(this));
   
     /*    
   var that = this;
@@ -399,6 +400,31 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 		if (foundFlag===false){
 		    this.uniqueSymbolAndDatesArray.push({
 			ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase(),
+			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
+		    });
+		}
+	    }
+	}
+    }
+};
+
+
+Reader.prototype.CreateListOfComparisonStocks = function() {
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		var foundFlag=false;
+		for ( var k=0;k<this.comparisonStockData.length;k++){
+		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase() &&
+			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+			foundFlag=true;
+			break;
+		    }
+		}
+		//add data if matching data not found
+		if (foundFlag===false){
+		    this.comparisonStockData.push({
+			ticker:this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase(),
 			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
 		    });
 		}
