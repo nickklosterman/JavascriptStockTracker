@@ -35,6 +35,7 @@ Reader.prototype.callbackStack = function() {
 //    this.AppendCurrentStockData();
     this.CalculatePortfolioPercentages();
 
+this.CalculateComparisonResults();
 
 //  this.OutputDisplayedPortfolios(); //for json output
 
@@ -383,6 +384,9 @@ Reader.prototype.CalculatePurchaseSharePrice = function(){
     }
 }
 
+Reader.prototype.CalculateComparisonResults = function() {
+
+}
 
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
@@ -408,15 +412,15 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
     }
 };
 
-
+//can we generalize this function to pass in the array to be written/pushed to, the propert(ies) to compare, and the propert(ies) to write?
 Reader.prototype.CreateListOfComparisonStocks = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
-	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+	    for ( var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++ ){
 		var foundFlag=false;
-		for ( var k=0;k<this.comparisonStockData.length;k++){
-		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase() &&
-			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+		for ( var k=0; k<this.comparisonStockData.length; k++ ){
+		    if ( this.comparisonStockData[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase() &&
+			 this.comparisonStockData[k].date  ===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
 			foundFlag=true;
 			break;
 		    }
@@ -431,6 +435,9 @@ Reader.prototype.CreateListOfComparisonStocks = function() {
 	    }
 	}
     }
+
+//add the unique stocks to this.stockList so that we get the current stock data
+//it might be simplest to keep the comparison stocks for different dates as separate entries instead of a single stock ticker but an array of dates. 
 };
 
 //This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
