@@ -7,6 +7,7 @@ var fs = require('graceful-fs'),
 function Reader(parameters){
     this.currentStockData=new Array();    
     this.historicalStockData=new Array();
+this.comparisonStockData=new Array();
     this.uniqueSymbolAndDatesArray=new Array();
     this.outputDB=parameters['databaseName'] || 'temp.sqlite3';
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
@@ -34,6 +35,7 @@ Reader.prototype.callbackStack = function() {
 //    this.AppendCurrentStockData();
     this.CalculatePortfolioPercentages();
 
+this.CalculateComparisonResults();
 
 //  this.OutputDisplayedPortfolios(); //for json output
 
@@ -57,7 +59,7 @@ Reader.prototype.CheckComplete = function() {
 };
 
 Reader.prototype.init = function() {
-    this.completionsNeeded = 1//2;
+    this.completionsNeeded = 2;
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.CreateListOfUniqueStockSymbols();
     this.CreateListOfUniquePurchaseDates();
@@ -68,7 +70,7 @@ Reader.prototype.init = function() {
     //Asynch call
     this.GetCurrentStockData(this.CheckComplete.bind(this));
     //Asynch call
-//    this.GetHistoricalStockData(this.CheckComplete.bind(this));
+    this.GetHistoricalStockData(this.CheckComplete.bind(this));
   
     /*    
   var that = this;
@@ -383,6 +385,9 @@ Reader.prototype.CalculatePurchaseSharePrice = function(){
     }
 }
 
+Reader.prototype.CalculateComparisonResults = function() {
+
+}
 
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
@@ -406,6 +411,34 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 	    }
 	}
     }
+};
+
+//can we generalize this function to pass in the array to be written/pushed to, the propert(ies) to compare, and the propert(ies) to write?
+Reader.prototype.CreateListOfComparisonStocks = function() {
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for ( var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++ ){
+		var foundFlag=false;
+		for ( var k=0; k<this.comparisonStockData.length; k++ ){
+		    if ( this.comparisonStockData[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase() &&
+			 this.comparisonStockData[k].date  ===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+			foundFlag=true;
+			break;
+		    }
+		}
+		//add data if matching data not found
+		if (foundFlag===false){
+		    this.comparisonStockData.push({
+			ticker:this.portfolio.portfolio[i].portfolioStocks[j].compareToTicker.toLowerCase(),
+			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
+		    });
+		}
+	    }
+	}
+    }
+
+//add the unique stocks to this.stockList so that we get the current stock data
+//it might be simplest to keep the comparison stocks for different dates as separate entries instead of a single stock ticker but an array of dates. 
 };
 
 //This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
