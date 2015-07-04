@@ -7,7 +7,7 @@ var fs = require('graceful-fs'),
 function Reader(parameters){
     this.currentStockData=new Array();    
     this.historicalStockData=new Array();
-this.comparisonStockData=new Array();
+    this.comparisonStockData=new Array();
     this.uniqueSymbolAndDatesArray=new Array();
     this.outputDB=parameters['databaseName'] || 'temp.sqlite3';
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
@@ -19,24 +19,38 @@ this.comparisonStockData=new Array();
 
     this.purchaseDateList = new Array();
 
+    this.historicalDataFile = 'historicalStockData.txt';
+
 };
 
 Reader.prototype.callbackStack = function() {
     this.AppendCurrentStockData();
+//this.AppendHistoricalStockData();
     this.CalculateGains(); 
     this.PortfolioCalculateGains();
     //    console.log("cSD_cbs 1:",this.currentStockData);
     this.ComputeAnnualizedReturn(); // this.currentStockData is getting jacked up somehow in here
-    //  console.log("cSD_cbs 2:",this.currentStockData);
+      console.log("cSD_cbs 2:",this.currentStockData);
     this.TotalPortfolioGains();
     this.TotalPortfolioPurchasePrice();
     //    console.log("output:",this.portfolio);
     //    console.log(JSON.stringify(this.portfolio));
-//    this.AppendCurrentStockData();
+    this.AppendCurrentStockData();
     this.CalculatePortfolioPercentages();
 
-this.CalculateComparisonResults();
+    var tickerNum = 2;
+    switch(tickerNum) {
+    case 0:
+	this.CalculateComparisonResults("%5edji"); //"^dji -> %5edji 
+	break;
+    case 1:
+	this.CalculateComparisonResults("%5egscp");
+	break;
+    case 2:
+	this.CalculateComparisonResults("%5eixic");
+	break;
 
+    }
 //  this.OutputDisplayedPortfolios(); //for json output
 
     //I still need to run the TotalPortfolioGains and TotalPortfolioPurchasePrice functions
@@ -59,11 +73,12 @@ Reader.prototype.CheckComplete = function() {
 };
 
 Reader.prototype.init = function() {
+    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
     this.completionsNeeded = 2;
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.CreateListOfUniqueStockSymbols();
     this.CreateListOfUniquePurchaseDates();
-    this.CreateListOfUniqueStockSymbolsAndDates();
+//    this.CreateListOfUniqueStockSymbolsAndDates();
     this.CalculatePurchaseSharePrice();
     this.CalculateHoldingTimePeriod()
 
@@ -385,17 +400,61 @@ Reader.prototype.CalculatePurchaseSharePrice = function(){
     }
 }
 
-Reader.prototype.CalculateComparisonResults = function() {
+Reader.prototype.CalculateComparisonResults = function(ticker) {
+//Reader.prototype.AppendHistoricalStockData = function() {
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
+		var comparisonCurrentStockData = this.currentStockData.filter( function(item) {
+                    return item.ticker === ticker.toLowerCase(); 
+                });
+var stock = this.portfolio.portfolio[i].portfolioStocks[j]; 
+		var comparisonHistoricalStockData = this.historicalStockData.filter( function(item) {
+//this is failing. derp, I didn't/don't have the historical data for the comparison stock. damn this comparator stock can double (in worst case) the amount of network calls for historical data. Good idea to save this off. Then only need to get current data. 
+		    var parsedItemDate = item.date.split("-"),
+//month is 0 based
+		    histDate = new Date(parseInt(parsedItemDate[0]),parseInt(parsedItemDate[1])-1,parseInt(parsedItemDate[2])), //item.date),
+		    currentDate = new Date(stock.purchaseDate);
+		    console.log(" id:"+item.date + " s.pd:"+stock.purchaseDate + " hD:" + histDate + " cD:" + currentDate + " parsedItemDate:"+parsedItemDate);
+		    console.log("i.t:"+item.ticker+ " t.tLC():"+ticker.toLowerCase());
+                    return item.ticker === ticker.toLowerCase() && histDate === currentDate;
+                });
 
+
+//		console.log("hsd",this.historicalStockData);
+		if (comparisonCurrentStockData.length && comparisonHistoricalStockData.length ) {		
+//		this.portfolio.portfolio[i].portfolioStocks[j].comparisonAnnualizedReturn = comparisonCurrentStockData[0].currentPrice - comparisonHistoricalStockData[0].adjClose / ;
+		//this.portfolio.portfolio[i].portfolioStocks[j].shares * 
+		    console.log("cHSD0.adjClose:"+(comparisonHistoricalStockData[0].adjClose+00) + " comparisonCurrentStockData[0].currenPrice:"+(comparisonCurrentStockData[0].currentPrice+00) +  " this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears:"+ (this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears+00));
+	/*	    console.log(typeof comparisonHistoricalStockData[0].adjClose);
+		    console.log(typeof comparisonCurrentStockData[0].currentPrice);
+		    console.log(typeof this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears);*/
+
+
+		    annualizedReturn = (Math.pow( (  comparisonCurrentStockData[0].currentPrice - comparisonHistoricalStockData[0].adjClose  )  / comparisonHistoricalStockData[0].adjClose +1 , 1/this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears ) -1)*100;
+		console.log(annualizedReturn);
+		} else {
+		    if (comparisonCurrentStockData.length === 0 ) {
+			console.log("cCSD.l = 0");
+		    } else {
+			console.log("cHSD.l = 0");
+		    }
+		}
+	    }
+	}
+    }
 }
 
+//the uniqueSymbolAndDatesArray is used to retrieve the historical stock data with as few network calls as possible.
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
+    //loop over the portfolio
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		var foundFlag=false;
-		for ( var k=0;k<this.uniqueSymbolAndDatesArray.length;k++){
-		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() &&
+		for ( var k=0; k < this.uniqueSymbolAndDatesArray.length; k++ ){
+		    if ( (this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() || 
+			  ( this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker && this.uniqueSymbolAndDatesArray[k].ticker === this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker.toLowerCase()) ) &&
 			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
 			foundFlag=true;
 			break;
@@ -409,6 +468,24 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 		    });
 		}
 	    }
+	}
+    }
+    //loop over the already retrieved historical data
+    for ( i=0;i<this.historicalStockData.length;i++){
+	foundFlag=false;
+	for ( var k=0; k < this.uniqueSymbolAndDatesArray.length; k++ ){
+	    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.historicalStockData[i].ticker.toLowerCase() &&
+		  this.uniqueSymbolAndDatesArray[k].date===this.historicalStockData[i].date ){
+		foundFlag=true;
+		break;
+	    }
+	}
+	//add data if matching data not found
+	if (foundFlag===false){  //is this conditional statement redundant because of the break?
+	    this.uniqueSymbolAndDatesArray.push({
+		ticker:this.historicalStockData[i].ticker.toLowerCase(),
+		date:this.historicalStockData[i].date
+	    });
 	}
     }
 };
@@ -507,6 +584,7 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 		    //			console.log(JSON.stringify(that.currentStockData));
 		    //		    console.log("getHistoricalStockData done");
 		    //		    console.log(JSON.stringify(that.historicalStockData));
+		    that.WriteHistoricalStockData();
 		    if (typeof cb==='function') {
 			cb();
 		    }
@@ -518,7 +596,7 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 	    //if prrxx still need to increment completioncounter
 	    completionCounter++
 	}
-	
+
     }
     
 };
@@ -744,18 +822,68 @@ Reader.prototype.ParseForPieChart = function(valueParam,labelParam) {
 		obj.label=this.portfolio.portfolio[i].portfolioStocks[j][labelParam].toUpperCase();
 		obj.color=colorArray[j];
 		//I need an array of colors or something (a theme) to use for nice colors. I suppose I could come up with a rainbow and then based on the number of datapoints assign the colors using some algo to index in or create a color
-		console.log(obj)
+//		console.log(obj)
 		outputArray.push(obj);
 	    }
 	}
     }
 
-    console.log(":",outputArray);
+  //  console.log(":",outputArray);
 };
+
+Reader.prototype.ReadHistoricalStockData = function(cb) {
+    var that = this;
+    fs.readFile(this.historicalDataFile, function(err,data){
+	if (err) { 
+	    if (err.code !== "ENOENT") {
+		console.log(err);
+		console.log(err.errno+ " "+process.ENOENT);
+		throw err;
+	    }
+	    //	console.log(
+	} else {
+	    that.historicalStockData = JSON.parse(data);
+
+	}
+	if (typeof cb==='function') {
+	    cb();
+	}
+
+    });
+}
+
+Reader.prototype.WriteHistoricalStockData = function() {
+    /*
+I was thinking about this all wrong. I was thinking I'd need to first read the file here before writing, reconcile any difference between what was read and what was retrieved and go from there. But I need to read farther upstream before attempting to write. I need to read the file before making any network requests. at that point is when I reconcile the diff btw what I have locally and what I need to get. 
+Hmm I may need to periodically check just in case a stock I'm comparing against splits and the adjClose changes. other than that I can't think of a case where I'd need to reupdate data. I should write a separate function to update the historical stock price file. 
+
+    //if file exists, read file...
+
+    //    fs.open("historicalData.txt", "r+", function(err,fd){
+    fs.readFile("historicalData.txt", function(err,data){
+    if (err) {
+    //file doesn't exist, just write out data */
+    console.log(this.historicalDataFile+" "+JSON.stringify(this.historicalStockData));
+    fs.writeFile(this.historicalDataFile,JSON.stringify(this.historicalStockData),function(err,wr,bf) {
+	if (err){
+	    console.log("There was an error while writing to file.");
+	} else {
+	    console.log("Wrote "+wr+" bytes to "+bf);
+	}
+    });
+    /*	} else {
+	var fileContents = JSON.parse(data);
+	// ...merge contents of data read from file and historicalStockData 
+	//..and write contents back to file.	
+	
+}
+    });
+*/
+}
 
 //http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
 function numberWithCommas(x) {
-   
+ 
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 } //http://stackoverflow.com/questions/11832914/round-to-at-most-2-decimal-places-in-javascript
 
@@ -810,3 +938,5 @@ module.exports = Reader
 //a flipcard view of your stocks. Have the cards colored based on how they are doing. flip the card over (ad nauseum) to see different stats.  One view could be the company profile etc. Seems like a gimmicky thing to do but people like gimmicky shit. 
 
 // http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%3D%22' + stocksUrl + '%22&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=  ; use %20 btw individual stock ticker symbols  got this from http://codepen.io/alexerlandsson/pen/YXXzLR
+
+//write a script to change purchaseDate, or somehow standardize the dates of the for easier comparison
