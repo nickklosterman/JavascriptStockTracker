@@ -1,0 +1,55 @@
+{"portfolio":
+ [
+     {
+	 "portfolioName":"model",
+       "display":"yes",
+       "tickerComparison":"aapl",
+	 "portfolioStocks": [
+	     {"ticker":"bwld","tickerName":"TRPrice Mid-Cap Growth Fund", "shares":1, "totalPurchasePrice":140.670000, "purchaseDate": "8/15/2013", "commissionToBuy":0, "commissionToSell":0, "contributionType":"ELECTIVE DEFERRAL"},
+	     {"ticker":"vips","tickerName":"Vanguard Mid-Cap Index Fund Instl Shares", "shares":1, "totalPurchasePrice":16.670000, "purchaseDate": "8/15/2013", "commissionToBuy":0, "commissionToSell":0, "contributionType":"ELECTIVE DEFERRAL"}
+	 ]
+     }, 
+     { "portfolioName":"Intelligrated T. Rowe Price",
+       "display":"true",
+       "portfolioStocks":
+       [ 
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":20.29,"shares":0.2665,"unitPrice":76.14},
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":121.74,"shares":1.5989,"unitPrice":76.14},
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"QNEC ","totalPurchasePrice":81.16,"shares": 1.0659,"unitPrice":76.14},
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":8.70,"shares":0.2792,"unitPrice":31.16},
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":52.18,"shares":1.6746,"unitPrice":31.16},
+	   {"purchaseDate":"02/28/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"QNEC","totalPurchasePrice":34.79, "shares":1.1165,"unitPrice":31.16},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":21.09,"shares":0.2813,"unitPrice":74.97},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":126.55,"shares":1.6880,"unitPrice":74.97},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"QNEC ","totalPurchasePrice":84.37,"shares":1.1254 ,"unitPrice":74.97},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":9.04,"shares":0.2966,"unitPrice":30.48},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":54.24,"shares":1.7795,"unitPrice":30.48},
+	   {"purchaseDate":"02/19/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"QNEC","totalPurchasePrice":36.16,"shares": 1.1864,"unitPrice":30.48},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":19.83,"shares":0.2806,"unitPrice":70.67},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":119.00,"shares":1.6839,"unitPrice":70.67},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"QNEC ","totalPurchasePrice":79.33,"shares":1.1225 ,"unitPrice":70.67},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":8.50,"shares":0.2970,"unitPrice":28.62},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":51.00,"shares":1.7820,"unitPrice":28.62},
+	   {"purchaseDate":"02/03/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"QNEC","totalPurchasePrice":34.00,"shares": 1.1880,"unitPrice":28.62},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":99.17,"shares":1.3430,"unitPrice":73.84},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL ","totalPurchasePrice":1388.33,"shares":18.8019,"unitPrice":73.84},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"QNEC ","totalPurchasePrice":79.33,"shares":1.0743 ,"unitPrice":73.84},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":42.5,"shares":1.4059,"unitPrice":30.23},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":595.00,"shares":19.6824,"unitPrice":30.23},
+	   {"purchaseDate":"01/16/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"QNEC","totalPurchasePrice":34.00,"shares":1.1247,"unitPrice":30.23},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":99.17,"shares":1.3641,"unitPrice":72.70},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":1388.33,"shares":19.0967,"unitPrice":72.70},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"QNEC ","totalPurchasePrice":79.33,"shares":1.0912 ,"unitPrice":72.70},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":42.50,"shares":1.4138,"unitPrice":30.06},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":595.00,"shares":19.7937,"unitPrice":30.06},
+	   {"purchaseDate":"01/09/2014","CONTRIBUTION":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix","contribType":"QNEC","totalPurchasePrice":34.00 ,"shares":1.1311,"unitPrice":30.06},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":4869.59,"shares":66.9084,"unitPrice":72.78},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":959.18,"shares":13.1792,"unitPrice":72.78},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"MID-CAP GROWTH FUND","ticker":"rpmgx","contribType":"SAFE HARBOR MATCH 100% VESTED","totalPurchasePrice":1280.99,"shares":17.6009 ,"unitPrice":72.78},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE PRETAX DEFERRAL","totalPurchasePrice":2083.26,"shares":69.9550,"unitPrice":29.78},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"EMPLOYEE ROTH DEFERRAL","totalPurchasePrice":410.13,"shares":13.7720,"unitPrice":29.78},
+	   {"purchaseDate":"01/02/2014","CONVERSION-IN":"contribType","tickerName":"VANGUARD MID-CAP INDEX, INST","ticker":"vmcix", "contribType":"SAFE HARBOR MATCH 100% VESTED","totalPurchasePrice":547.27,"shares":18.3771,"unitPrice":29.78}
+       ]
+     }
+ ]
+}
