@@ -14,6 +14,14 @@ switch (mySwitch)
     var myHelper = new H({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
     myHelper.GetHistoricalStockData();
     break;
+  case 2:
+    var myReader = new R({portfolioFile:"../TestPortfolio1.json"});
+    myReader.init();
+    break;
+  case 3:
+    var myReader = new R({portfolioFile:"../TestPortfolio2.json"});
+    myReader.init();
+    break;
 }
     
 

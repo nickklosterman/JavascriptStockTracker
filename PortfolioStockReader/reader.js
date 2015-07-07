@@ -30,7 +30,7 @@ Reader.prototype.callbackStack = function() {
     this.PortfolioCalculateGains();
     //    console.log("cSD_cbs 1:",this.currentStockData);
     this.ComputeAnnualizedReturn(); // this.currentStockData is getting jacked up somehow in here
-      console.log("cSD_cbs 2:",this.currentStockData);
+    //  console.log("cSD_cbs 2:",this.currentStockData);
     this.TotalPortfolioGains();
     this.TotalPortfolioPurchasePrice();
     //    console.log("output:",this.portfolio);
@@ -57,30 +57,34 @@ Reader.prototype.callbackStack = function() {
     //or have a switch to only operate on those portfolios which are displayed. Then we could output again only those that are
     //Or have the first operation be to only return the display = yes portfolios
 
-//    this.RenderOutput(); //for html output
-    this.ParseForPieChart("shares","ticker");
-    this.ParseForPieChart("totalPurchasePrice","ticker"); //is there an easier way such that I could do a watch on the datasource and refresh the graph? That way I don't have to have multiple graphs that are displayed  or hidden based on what data is selected.
+    this.RenderOutput(); //for html output
+//    this.ParseForPieChart("shares","ticker");
+//    this.ParseForPieChart("totalPurchasePrice","ticker"); //is there an easier way such that I could do a watch on the datasource and refresh the graph? That way I don't have to have multiple graphs that are displayed  or hidden based on what data is selected.
 };
 
 Reader.prototype.CheckComplete = function() {
     this.completionCounter+=1;
-    //    console.log("cC:"+this.completionCounter);
+//    console.log("cC:"+this.completionCounter);
     if (this.completionCounter==this.completionsNeeded){
 	//	console.log("calling cbS");
 	this.callbackStack();
     }
 
 };
-
+Reader.prototype.Package1 = function () {
+  this.CreateListOfUniqueStockSymbolsAndDates();
+  this.GetHistoricalStockData(this.CheckComplete.bind(this));
+};
 Reader.prototype.init = function() {
-    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
+//    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
+    this.ReadHistoricalStockData(this.Package1.bind(this));
     this.completionsNeeded = 2;
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
     this.CreateListOfUniqueStockSymbols();
     this.CreateListOfUniquePurchaseDates();
 //    this.CreateListOfUniqueStockSymbolsAndDates();
     this.CalculatePurchaseSharePrice();
-    this.CalculateHoldingTimePeriod()
+    this.CalculateHoldingTimePeriod();
 
     //Asynch call
     this.GetCurrentStockData(this.CheckComplete.bind(this));
@@ -110,6 +114,7 @@ Reader.prototype.PrintUniqueTickers = function() {
 
 Reader.prototype.CreateListOfUniqueStockSymbols = function() {
 
+//add in default indices, proly should add in wilsire and other large ones.
     this.stockList.push("^dji");
     this.stockList.push("^gspc");
     this.stockList.push("^ixic");
@@ -163,6 +168,7 @@ Reader.prototype.CreateListOfUniquePurchaseDates = function() {
 
 //why stick the data in a sqlitedb when the db would be temp anyway. just save the data off in a flatafile/json object
 Reader.prototype.GetCurrentStockData = function(cb) {
+//  console.log("GetCurrentStockData");
     var that = this;
     var completionCounter=0;
     
@@ -223,12 +229,13 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 				       });
 	    //	    console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 	    completionCounter++;
+            //console.log("cC:"+completionCounter+" t.sL.l:"+that.stockList.length);
 	    //ensure that all requests complete before executing callback
 	    if (completionCounter==that.stockList.length){
 		//		console.log(JSON.stringify(that.currentStockData));
 		//		console.log("getCurrentStockData done");
-		//		console.log("cSD:",that.currentStockData);
-		if (cb) {
+		//console.log("cSD:",that.currentStockData);
+		if (cb && typeof cb === 'function') {
 		    cb();
 		}
 	    }
@@ -255,8 +262,9 @@ Reader.prototype.CalculateGains = function(){
 		if ( stockData.length == 0 ){ console.log("shitCG:"+currentStockTicker);} else {
 		    //console.log(stockData[0].currentPrice);
 		    this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * (this.portfolio.portfolio[i].portfolioStocks[j].shares) - (this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
-		    
-		    var temp = (this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice );
+
+//should i be taking out the commission price for this percent gain calculation?  nah.. it gives us a true value of gains since the totalPurchasePrice has the commission in it. might even want to take out the commission to sell...but then why not take into acct taxes etc etc etc...waht a rabbit hole. 
+		    var temp = (this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice ) * 100;
 		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
 		    this.portfolio.portfolio[i].portfolioStocks[j].currentValue = stockData[0].currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
 		    
@@ -415,8 +423,8 @@ var stock = this.portfolio.portfolio[i].portfolioStocks[j];
 //month is 0 based
 		    histDate = new Date(parseInt(parsedItemDate[0]),parseInt(parsedItemDate[1])-1,parseInt(parsedItemDate[2])), //item.date),
 		    currentDate = new Date(stock.purchaseDate);
-		    console.log(" id:"+item.date + " s.pd:"+stock.purchaseDate + " hD:" + histDate + " cD:" + currentDate + " parsedItemDate:"+parsedItemDate);
-		    console.log("i.t:"+item.ticker+ " t.tLC():"+ticker.toLowerCase());
+//		    console.log(" id:"+item.date + " s.pd:"+stock.purchaseDate + " hD:" + histDate + " cD:" + currentDate + " parsedItemDate:"+parsedItemDate);
+//		    console.log("i.t:"+item.ticker+ " t.tLC():"+ticker.toLowerCase());
                     return item.ticker === ticker.toLowerCase() && histDate === currentDate;
                 });
 
@@ -425,20 +433,22 @@ var stock = this.portfolio.portfolio[i].portfolioStocks[j];
 		if (comparisonCurrentStockData.length && comparisonHistoricalStockData.length ) {		
 //		this.portfolio.portfolio[i].portfolioStocks[j].comparisonAnnualizedReturn = comparisonCurrentStockData[0].currentPrice - comparisonHistoricalStockData[0].adjClose / ;
 		//this.portfolio.portfolio[i].portfolioStocks[j].shares * 
-		    console.log("cHSD0.adjClose:"+(comparisonHistoricalStockData[0].adjClose+00) + " comparisonCurrentStockData[0].currenPrice:"+(comparisonCurrentStockData[0].currentPrice+00) +  " this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears:"+ (this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears+00));
+//		    console.log("cHSD0.adjClose:"+(comparisonHistoricalStockData[0].adjClose+00) + " comparisonCurrentStockData[0].currenPrice:"+(comparisonCurrentStockData[0].currentPrice+00) +  " this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears:"+ (this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears+00));
 	/*	    console.log(typeof comparisonHistoricalStockData[0].adjClose);
 		    console.log(typeof comparisonCurrentStockData[0].currentPrice);
 		    console.log(typeof this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears);*/
 
 
 		    annualizedReturn = (Math.pow( (  comparisonCurrentStockData[0].currentPrice - comparisonHistoricalStockData[0].adjClose  )  / comparisonHistoricalStockData[0].adjClose +1 , 1/this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears ) -1)*100;
-		console.log(annualizedReturn);
+//		console.log(annualizedReturn);
 		} else {
+/* not sure what this was for
 		    if (comparisonCurrentStockData.length === 0 ) {
 			console.log("cCSD.l = 0");
 		    } else {
 			console.log("cHSD.l = 0");
 		    }
+*/
 		}
 	    }
 	}
@@ -447,26 +457,56 @@ var stock = this.portfolio.portfolio[i].portfolioStocks[j];
 
 //the uniqueSymbolAndDatesArray is used to retrieve the historical stock data with as few network calls as possible.
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
+//console.log("yeopp");
+  var comparisonTicker = "";
     //loop over the portfolio
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
+          if (this.portfolio.portfolio[i].comparisonTicker) {
+            comparisonTicker = this.portfolio.portfolio[i].comparisonTicker;
+          }
 	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
-		var foundFlag=false;
+		var foundTickerFlag=false,
+                    foundComparisonTickerFlag=false;
 		for ( var k=0; k < this.uniqueSymbolAndDatesArray.length; k++ ){
-		    if ( (this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() || 
-			  ( this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker && this.uniqueSymbolAndDatesArray[k].ticker === this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker.toLowerCase()) ) &&
+                  if (this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker) {
+                    comparisonTicker = this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker;
+}
+		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() &&
 			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
-			foundFlag=true;
+//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate );
+			foundTickerFlag=true;
+                      if (foundComparisonTickerFlag === true) {
+			break; //only break with both flags are true.
+                      }
+		    }
+
+		    if ( 
+//			  ( this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker && this.uniqueSymbolAndDatesArray[k].ticker === this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker.toLowerCase()) ) &&
+			  this.uniqueSymbolAndDatesArray[k].ticker === comparisonTicker.toLowerCase()  &&
+			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate );
+			foundComparisonTickerFlag=true;
+                      if (foundTickerFlag === true) {
 			break;
+                      }
 		    }
 		}
+
 		//add data if matching data not found
-		if (foundFlag===false){
+		if (foundTickerFlag===false){
 		    this.uniqueSymbolAndDatesArray.push({
 			ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase(),
 			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
 		    });
 		}
+		if (foundComparisonTickerFlag===false){
+		    this.uniqueSymbolAndDatesArray.push({
+			ticker:comparisonTicker,
+			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
+		    });
+		}
+
 	    }
 	}
     }
@@ -488,6 +528,7 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 	    });
 	}
     }
+//  console.log("t.uSADA:",this.uniqueSymbolAndDatesArray);
 };
 
 //can we generalize this function to pass in the array to be written/pushed to, the propert(ies) to compare, and the propert(ies) to write?
@@ -520,11 +561,12 @@ Reader.prototype.CreateListOfComparisonStocks = function() {
 
 //This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
 Reader.prototype.GetHistoricalStockData = function(cb) {
+//  console.log("GetHistoricalStockData");
     var that = this,
 	completionCounter = 0;
-    
+  //  console.log(this.uniqueSymbolAndDatesArray.length);
     for (var i = 0; i < this.uniqueSymbolAndDatesArray.length; i++){
-	//	console.log(this.uniqueSymbolAndDatesArray[i].date);
+//		console.log(this.uniqueSymbolAndDatesArray[i]);
 	var date = this.uniqueSymbolAndDatesArray[i].date.split("/");
 	var month = parseFloat(date[0])-1;
 	var day = parseFloat(date[1]);
@@ -563,9 +605,8 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 		//The data is csv with the first line being the column headers of :
 		//Date,Open,High,Low,Close,Volume,Adj Close
 		var data = body.split("\n");
-		//console.log(url + " : " +that.uniqueSymbolAndDatesArray[i].ticker+" "+that.uniqueSymbolAndDatesArray[i].date+"=-> " +body/*data[1]*/);
+//		console.log(url + " : " +that.uniqueSymbolAndDatesArray[i].ticker+" "+that.uniqueSymbolAndDatesArray[i].date+"=-> " +body/*data[1]*/);
 		var stockData = data[1].split(",");
-
 		
 		that.historicalStockData.push({ticker:that.uniqueSymbolAndDatesArray[i].ticker,
 					       date:stockData[0],
@@ -578,14 +619,14 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 					      });
 		//		console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 		completionCounter++;
-		//		console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
+//				console.log(completionCounter+" "+that.uniqueSymbolAndDatesArray.length);
 		//ensure that all requests complete before executing callback
 		if (completionCounter==that.uniqueSymbolAndDatesArray.length){
-		    //			console.log(JSON.stringify(that.currentStockData));
+		  //console.log(JSON.stringify(that.currentStockData));
 		    //		    console.log("getHistoricalStockData done");
 		    //		    console.log(JSON.stringify(that.historicalStockData));
 		    that.WriteHistoricalStockData();
-		    if (typeof cb==='function') {
+		    if (cb && typeof cb==='function') {
 			cb();
 		    }
 		}
@@ -620,6 +661,7 @@ Reader.prototype.OutputDisplayedPortfolios = function() {
 
 
 Reader.prototype.RenderOutput = function() {
+//console.log("render");
     var stockTemplate = "<div><span class=\"\">{{ticker}}</span>"
         + "<span class=\"\">{{shares}}</span>"
         + "<span class=\"\">{{totalPurchasePrice}}</span> "
@@ -822,13 +864,13 @@ Reader.prototype.ParseForPieChart = function(valueParam,labelParam) {
 		obj.label=this.portfolio.portfolio[i].portfolioStocks[j][labelParam].toUpperCase();
 		obj.color=colorArray[j];
 		//I need an array of colors or something (a theme) to use for nice colors. I suppose I could come up with a rainbow and then based on the number of datapoints assign the colors using some algo to index in or create a color
+
 //		console.log(obj)
 		outputArray.push(obj);
 	    }
 	}
     }
-
-  //  console.log(":",outputArray);
+//  console.log("PieChart Output Array:",outputArray);
 };
 
 Reader.prototype.ReadHistoricalStockData = function(cb) {
@@ -848,7 +890,6 @@ Reader.prototype.ReadHistoricalStockData = function(cb) {
 	if (typeof cb==='function') {
 	    cb();
 	}
-
     });
 }
 
@@ -863,7 +904,7 @@ Hmm I may need to periodically check just in case a stock I'm comparing against 
     fs.readFile("historicalData.txt", function(err,data){
     if (err) {
     //file doesn't exist, just write out data */
-    console.log(this.historicalDataFile+" "+JSON.stringify(this.historicalStockData));
+  //console.log(this.historicalDataFile+" "+JSON.stringify(this.historicalStockData));
     fs.writeFile(this.historicalDataFile,JSON.stringify(this.historicalStockData),function(err,wr,bf) {
 	if (err){
 	    console.log("There was an error while writing to file.");
@@ -939,4 +980,7 @@ module.exports = Reader
 
 // http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%3D%22' + stocksUrl + '%22&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=  ; use %20 btw individual stock ticker symbols  got this from http://codepen.io/alexerlandsson/pen/YXXzLR
 
-//write a script to change purchaseDate, or somehow standardize the dates of the for easier comparison
+//write a script to change purchaseDate, or somehow standardize the dates for easier comparison
+
+// highlight/alert if price drop by X%
+
