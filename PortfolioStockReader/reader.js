@@ -267,12 +267,33 @@ Reader.prototype.CalculateGains = function(){
 		    var temp = (this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice ) * 100;
 		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
 		    this.portfolio.portfolio[i].portfolioStocks[j].currentValue = stockData[0].currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
+		    if (this.portfolio.portfolio[i].portfolioStocks[j].expenseRatio){
+			this.CalculateMutualFundFeesPaid(this.portfolio.portfolio[i].portfolioStocks[j],stockData[0]);
+///			console.log("j",this.portfolio.portfolio[i].portfolioStocks[j].mutualFundFeesPaid)
+		    }
 		    
+
 		}
 	    }
 	}
     }
     //console.log(JSON.stringify(this.portfolio));
+}
+
+Reader.prototype.CalculateMutualFundFeesPaid = function(portfolioStock,stockData) {
+    //this is a really hard thing to keep track of because the ER changes over time as well as the value of the underlying share.
+    portfolioStock.mutualFundFeesPaid = portfolioStock.holdingTimePeriodInYears * portfolioStock.expenseRatio * portfolioStock.shares * stockData.currentPrice / 100 ; //this calculation can present a worst case number if the security is at a high with the ER being high. Or if both aren't highs, then it can be less than or equal to worst case
+}
+
+Reader.prototype.TotalMutualFundFeesPaid = function() {
+    var totalGains = 0 ;
+    for (var i=0; i<this.portfolio.portfolio.length; i++){
+	if ( this.portfolio.portfolio[i].display == 'yes'){
+	    
+	    totalGains += this.portfolio.portfolio[i].portfolioGains;
+	}
+    }
+    this.portfolio.totalGains = totalGains;
 }
 
 Reader.prototype.TotalPortfolioGains = function() {
@@ -307,7 +328,8 @@ totalDailyLosses = 0,
 	totalPurchasePrice = 0,
 	totalGainLoss = 0,
         totalGains = 0,
-	totalLosses = 0, 
+	    totalLosses = 0,
+	    portfolioMutualFundFeesPaid = 0, 
 	portfolioValue = 0;
 	if ( this.portfolio.portfolio[i].display == 'yes'){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
@@ -322,13 +344,14 @@ totalDailyLosses = 0,
 		} else {
 		    totalDailyLosses += this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss;
 		}
-//		    totalDailyLosses += this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss;
 
 		totalGainLoss += this.portfolio.portfolio[i].portfolioStocks[j].dollarGain;
 		totalCommissionPaid += this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy;
 		totalPurchasePrice += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice;
 		portfolioValue += this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice + this.portfolio.portfolio[i].portfolioStocks[j].dollarGain - this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy ;
-
+		if (typeof this.portfolio.portfolio[i].portfolioStocks[j].mutualFundFeesPaid === "number" ) {
+		    portfolioMutualFundFeesPaid += this.portfolio.portfolio[i].portfolioStocks[j].mutualFundFeesPaid;
+		}
 	    }
 	    this.portfolio.portfolio[i].totalDailyGains = totalDailyGains;
 	    this.portfolio.portfolio[i].totalDailyLosses = totalDailyLosses;
@@ -338,8 +361,8 @@ totalDailyLosses = 0,
 	    this.portfolio.portfolio[i].totalGainLoss = totalGainLoss;
 	    this.portfolio.portfolio[i].totalCommissionPaid = totalCommissionPaid;
 	    this.portfolio.portfolio[i].totalPurchasePrice = totalPurchasePrice;
-	    this.portfolio.portfolio[i].portfolioValue = portfolioValue;
-	    
+	    this.portfolio.portfolio[i].totalMutualFundFeesPaid = portfolioMutualFundFeesPaid;
+	    this.portfolio.portfolio[i].portfolioValue = portfolioValue;	    
 	}
     }
 }
@@ -698,6 +721,7 @@ Reader.prototype.RenderOutput = function() {
 	+ "<td class=\"number \">${{formatCurrency fiftyTwoWeekHigh}}</td>  "
 	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekPercentage}}%</td>  "
 	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekSpread}}%</td>  "
+    	+ "<td class=\"number \">${{formatCurrency mutualFundFeesPaid}}</td>  "
 	+ "<td class=\"\">{{trend}}</td> </tr>\n",
 	
 	portfolioTemplate = "<div>{{portfolioName}}</div>"
@@ -712,10 +736,10 @@ Reader.prototype.RenderOutput = function() {
                                  + "<tr><td colspan=\"4\">Total Gains </td><td colspan=\"4\">${{ formatCurrency totalGainLoss}}</td><td colspan=\"12\"></td></tr>"
                                  + "<tr><td colspan=\"4\">Commission Paid </td><td colspan=\"4\">${{ formatCurrency totalCommissionPaid}}</td><td colspan=\"12\"></td></tr>"
                                  + "<tr><td colspan=\"4\">Total Purchase Price </td><td colspan=\"4\">${{ formatCurrency totalPurchasePrice}}</td><td colspan=\"12\"></td></tr>"
-
-                                 + "<tr><td colspan=\"4\">Daily Gains</td><td colspan=\"4\">${{ formatCurrency totalDailyGains}}</td><td colspan=\"12\"></td></tr>"
-                                 + "<tr><td colspan=\"4\">Daily Losses </td><td colspan=\"4\">${{ formatCurrency totalDailyLosses}}</td><td colspan=\"12\"></td></tr>"
-
+        + "<tr><td colspan=\"4\">Daily Gains</td><td colspan=\"4\">${{ formatCurrency totalDailyGains}}</td><td colspan=\"12\"></td></tr>"
+    
+        + "<tr><td colspan=\"4\">Daily Losses </td><td colspan=\"4\">${{ formatCurrency totalDailyLosses}}</td><td colspan=\"12\"></td></tr>"
+        + "<tr><td colspan=\"4\">Mutual Fund Fees Paid </td><td colspan=\"4\">${{ formatCurrency totalMutualFundFeesPaid}}</td><td colspan=\"12\"></td></tr>"
                                  + "<tr><td colspan=\"4\">PortfolioWorth </td><td colspan=\"4\">${{ formatCurrency portfolioValue}}</td><td colspan=\"12\"></td></tr>",
 
 	mySwitch = 2;
@@ -729,13 +753,13 @@ Reader.prototype.RenderOutput = function() {
 	return value > 1 ? "positive":"negative";
     });
     hbs.registerHelper("formatCurrency",function(value){
-	if (value == null) {
+	if (value == null || value == '' || value == 'N/A' ) {
 	    return value  
 	}
 	return numberWithCommas(value.toFixed(2));
     });
     hbs.registerHelper("formatNumber_TwoDecimal",function(value){
-	if (value == null) {
+	if (value == null || value == '' || value == 'N/A') {
 	    return null
 	}
 	return value.toFixed(2);
@@ -796,6 +820,7 @@ Reader.prototype.RenderOutput = function() {
 			    + "<td class=\"\">52 High</td>  "
 			    + "<td class=\"\">52 Pct</td>  "
 			    + "<td class=\"\">52 Sprd</td>  "
+			    + "<td class=\"\">MF Fees</td>  "
 			    + "<td class=\"\">trend</td> </tr>\n");
 		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
@@ -827,8 +852,9 @@ Reader.prototype.AppendCurrentStockData = function() {
 		    this.portfolio.portfolio[i].portfolioStocks[j].prevClosePrice =stockData[0].prevClosePrice;
 		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekHigh =stockData[0].fiftyTwoWeekHigh;
 		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekLow =stockData[0].fiftyTwoWeekLow;
-		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekPercentage = ( stockData[0].currentPrice  - stockData[0].fiftyTwoWeekLow ) / ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow );
-		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekSpread = ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow ) /  stockData[0].currentPrice;
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekPercentage = 100 * ( stockData[0].currentPrice  - stockData[0].fiftyTwoWeekLow ) / ( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow );
+		    //the 52wk spread is the % of the high low range when compared to the current price. A large spread means lots of growth (volatility) and a small spread means less growth/volatility
+		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekSpread = 100 *( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow ) /  stockData[0].currentPrice;
 		    this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss = ( stockData[0].currentPrice - stockData[0].prevClosePrice ) * this.portfolio.portfolio[i].portfolioStocks[j].shares;
 
 		    this.portfolio.portfolio[i].portfolioStocks[j].trend =stockData[0].trend;
@@ -884,7 +910,11 @@ Reader.prototype.ReadHistoricalStockData = function(cb) {
 	    }
 	    //	console.log(
 	} else {
-	    that.historicalStockData = JSON.parse(data);
+	    //console.log("no error, reading data");
+	    //we need to check that the data is valid json somehow
+	    if (data.length > 0) {
+		that.historicalStockData = JSON.parse(data);
+	    }
 
 	}
 	if (typeof cb==='function') {
@@ -984,3 +1014,9 @@ module.exports = Reader
 
 // highlight/alert if price drop by X%
 
+// work out a way to collapse securities together such that all purchases of QQQ are together etc and can be expanded or collapsed
+// do teh same for ER adn show all the fees within (although that is a bit much. Just a bit of data entry , but not sure I care that much. Could write a data scraper to do that for me automagically.
+
+//write a front end that reads the json portfolio fil and allows you to edit and create a new entry. It will automagically update the dat e adn set the old display to no etc etc.
+
+//filter the portfolio array instead of having the if (display === "yes"
