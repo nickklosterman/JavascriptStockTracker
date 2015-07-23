@@ -764,14 +764,25 @@ Reader.prototype.RenderOutput = function() {
 	}
 	return value.toFixed(2);
     });
+    var rightNow = new Date();
     console.log("<!DOCTYPE html>"
 		+ "<html>"
-		+ "<head><title>date</title> \n"
+		+ "<head><title>"
+		+  rightNow
+		+ "</title> \n"
+		+ '<script type="text/javascript" src="jquery-2.1.4.min.js"></script>'
+		+ '<script type="text/javascript" src="jquery.tablesorter.js"></script>'
+		+ '<script type="text/javascript">'
+		+ '$(document).ready(function(){'
+		+ '$("table").tablesorter({});' //sortList: [[0,0],[4,0],[15,0]]});' //this sortList isn't working for me for some reaosn
+		+ '});'
+		+ "</script>"
 		+ "<style type=\"text/css\"> \n"
-		+ ".positive { background-color:green } \n"
-		+ ".negative { background-color:red } \n"
-		+ ".number { text-align:right } \n"
-		+ "tr:hover { background-color: #b8d1f3 } \n"
+		+ ".positive  { background-color:green } \n"
+		+ ".negative  { background-color:red } \n"
+		+ ".number    { text-align:right } \n"
+		+ "tr:hover   { background-color: #b8d1f3 } \n"
+		+ ".portfolio { border-bottom:1px solid black } \n"
 		+ "</style> \n"
 		+ "</head><body>");
 
@@ -799,35 +810,40 @@ Reader.prototype.RenderOutput = function() {
 	template = hbs.compile(stockTemplateTable);
 	for ( var i=0;i<this.portfolio.portfolio.length;i++){
 	    if (this.portfolio.portfolio[i].display == "yes") {
-		console.log("<table>");
-		console.log("<tr><td class=\"\">ticker</td>"
-			    + "<td class=\"\">shares</td>"
-			    + "<td class=\"\">Purchase Price</td> "
-			    + "<td class=\"colorStylingPositive dollarGain\">Gain</td>"
-			    + "<td class=\"\">Curr Value</td> "
-			    + "<td class=\"\">Purchase</td>"
-			    + "<td class=\"\">Buy</td>"
-			    + "<td class=\"\">Sell</td>"
-			    + "<td class=\"\">Years Held</td>"
-			    + "<td class=\"\">Daily +/-</td>"
-			    + "<td class=\"colorStylingPercent percentGain\">pct Gain</td> "
-			    + "<td class=\"colorStylingPositive annualizedReturn\">ann Return</td> "
-			    + "<td class=\"\">currentPrice</td>  "
-			    + "<td class=\"\">Open</td>  "
-			    + "<td class=\"\">Prev Close</td>  "
-			    + "<td class=\"\">Pct of Prtflo</td>  "
-			    + "<td class=\"\">52 Low</td>  "
-			    + "<td class=\"\">52 High</td>  "
-			    + "<td class=\"\">52 Pct</td>  "
-			    + "<td class=\"\">52 Sprd</td>  "
-			    + "<td class=\"\">MF Fees</td>  "
-			    + "<td class=\"\">trend</td> </tr>\n");
+		console.log("<h3>"+this.portfolio.portfolio[i].portfolioName+"</h3>");
+		console.log("<div class=\"portfolio\"><table><thead>");
+		console.log("<tr><th class=\"\">ticker</th>"
+			    + "<th class=\"\">shares</th>"
+			    + "<th class=\"\">Purchase Price</th> "
+			    + "<th class=\"colorStylingPositive dollarGain\">Gain</th>"
+			    + "<th class=\"\">Curr Value</th> "
+			    + "<th class=\"\">Purchase Date</th>"
+			    + "<th class=\"\">Buy</th>"
+			    + "<th class=\"\">Sell</th>"
+			    + "<th class=\"\">Years Held</th>"
+			    + "<th class=\"\">Daily +/-</th>"
+			    + "<th class=\"colorStylingPercent percentGain\">pct Gain</th> "
+			    + "<th class=\"colorStylingPositive annualizedReturn\">ann Return</th> "
+			    + "<th class=\"\">Current Price</th>  "
+			    + "<th class=\"\">Open</th>  "
+			    + "<th class=\"\">Prev Close</th>  "
+			    + "<th class=\"\">Pct of Prtflo</th>  "
+			    + "<th class=\"\">52 Low</th>  "
+			    + "<th class=\"\">52 High</th>  "
+			    + "<th class=\"\">52 Pct</th>  "
+			    + "<th class=\"\">52 Sprd</th>  "
+			    + "<th class=\"\">MF Fees</th>  "
+			    + "<th class=\"\">trend</th> </tr></thead><tbody>\n");
 		for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
 		    console.log(template(this.portfolio.portfolio[i].portfolioStocks[j]));
 		}
+		//separate stats table so that sort works only on the individual stock data
+		console.log("</tbody></table>");
+		
+		console.log("<table><thead><tr><th></th><th></th></tr></thead><tbody>");	    
 		var template2 = hbs.compile(portfolioStatsTemplate);
 		console.log(template2(this.portfolio.portfolio[i]));
-		console.log("</table>");
+		console.log("</tbody></table></div>");
 	    }
 	}
 
