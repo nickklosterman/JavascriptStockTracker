@@ -701,7 +701,7 @@ Reader.prototype.RenderOutput = function() {
         + "<span class=\"\">{{fiftyTwoWeekLow}}</span>  "
         + "<span class=\"\">{{fiftyTwoWeekHigh}}</span>  "
         + "<span class=\"\">{{trend}}</span>  </div>\n",
-	stockTemplateTable = "<tr><td class=\"\">{{ticker}}</td>"
+	stockTemplateTable = "<tr><td class=\"ticker\"><a href=\"http://finance.yahoo.com/echarts?s={{ticker}}+Interactive#symbol={{ticker}};range=1y\">{{ticker}}</a></td>"
 	+ "<td class=\"currency\">{{shares}}</td>"
 	+ "<td class=\"number \">${{formatCurrency totalPurchasePrice}}</td> "
 	+ "<td class=\"number {{ colorStylingPositive dollarGain}}\">${{formatCurrency dollarGain}}</td>"
@@ -778,6 +778,8 @@ Reader.prototype.RenderOutput = function() {
 		+ '});'
 		+ "</script>"
 		+ "<style type=\"text/css\"> \n"
+		+ ".ticker    { text-transform: uppercase } \n"
+		+ ".ticker a  { text-decoration: none; } \n"
 		+ ".positive  { background-color:green } \n"
 		+ ".negative  { background-color:red } \n"
 		+ ".number    { text-align:right } \n"
