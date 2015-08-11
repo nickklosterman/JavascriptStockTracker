@@ -770,6 +770,7 @@ Reader.prototype.RenderOutput = function() {
 		+ "<head><title>"
 		+  rightNow
 		+ "</title> \n"
+		+ '<meta HTTP-EQUIV="Refresh" CONTENT="450" charset="utf-8" />'
 		+ '<script type="text/javascript" src="jquery-2.1.4.min.js"></script>'
 		+ '<script type="text/javascript" src="jquery.tablesorter.js"></script>'
 		+ '<script type="text/javascript">'
