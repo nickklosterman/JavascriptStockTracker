@@ -1,26 +1,33 @@
-var R=require('./reader.js');
-var H=require('./helper.js');
+var R=require('./reader.js'),
+    H=require('./helper.js'),
+    myReader,
+    myHelper;
 
 var mySwitch = 0;
 switch (mySwitch)
 {
     case 0:
-    var myReader=new R({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
+    myReader=new R({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
   myReader.init();
 //    myReader.GetCurrentStockData(cb);
 
     break;
     case 1:
-    var myHelper = new H({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
+     myHelper = new H({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
     myHelper.GetHistoricalStockData();
     break;
   case 2:
-    var myReader = new R({portfolioFile:"../TestPortfolio1.json"});
+    myReader = new R({portfolioFile:"../TestPortfolio1.json"});
     myReader.init();
     break;
   case 3:
-    var myReader = new R({portfolioFile:"../TestPortfolio2.json"});
+    myReader = new R({portfolioFile:"../TestPortfolio2.json"});
     myReader.init();
+    break;
+    case 4: //use to output just the display:yes portfolios
+    myReader = new R({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
+    myReader.initializePortfolio();
+    myReader.OutputDisplayedPortfolios();
     break;
 }
     

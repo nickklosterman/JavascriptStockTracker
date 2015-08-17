@@ -75,6 +75,10 @@ Reader.prototype.Package1 = function () {
   this.CreateListOfUniqueStockSymbolsAndDates();
   this.GetHistoricalStockData(this.CheckComplete.bind(this));
 };
+
+Reader.prototype.initializePortfolio = function() {
+    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+}
 Reader.prototype.init = function() {
 //    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
     this.ReadHistoricalStockData(this.Package1.bind(this));
@@ -674,6 +678,7 @@ Reader.prototype.OutputDisplayedPortfolios = function() {
     });
 
     console.log("l---:",outputPortfolioArray);
+    console.log(JSON.stringify(outputPortfolioArray));
 
     for (var i =0; i<outputPortfolioArray.portfolio.length;i++){
 	for (var j =0; j<outputPortfolioArray.portfolio[i].portfolioStocks.length;j++){
