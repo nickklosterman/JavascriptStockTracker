@@ -11,7 +11,9 @@ function Reader(parameters){
     this.uniqueSymbolAndDatesArray=new Array();
     this.outputDB=parameters['databaseName'] || 'temp.sqlite3';
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
-
+    this.alternateDate=parameters['alternateDate'] || undefined;
+    //console.log("00",this.alternateDate);
+    //console.log(this.alternateDate.year);
     this.portfolio="";
     this.completionCounter = 0;
     this.completionsNeeded = 0;
@@ -24,6 +26,7 @@ function Reader(parameters){
 };
 
 Reader.prototype.callbackStack = function() {
+    console.log("callabackstack");
     this.AppendCurrentStockData();
 //this.AppendHistoricalStockData();
     this.CalculateGains(); 
@@ -64,7 +67,7 @@ Reader.prototype.callbackStack = function() {
 
 Reader.prototype.CheckComplete = function() {
     this.completionCounter+=1;
-//    console.log("cC:"+this.completionCounter);
+    console.log("cC:"+this.completionCounter+ " cN:"+this.completionsNeeded);
     if (this.completionCounter==this.completionsNeeded){
 	//	console.log("calling cbS");
 	this.callbackStack();
@@ -72,28 +75,52 @@ Reader.prototype.CheckComplete = function() {
 
 };
 Reader.prototype.Package1 = function () {
-  this.CreateListOfUniqueStockSymbolsAndDates();
-  this.GetHistoricalStockData(this.CheckComplete.bind(this));
+    this.CreateListOfUniqueStockSymbolsAndDates();
+        this.CreateListOfUniqueStockSymbols();
+    if (typeof this.alternateDate !== 'undefined' &&
+	typeof this.alternateDate.year !== 'undefined' &&
+	typeof this.alternateDate.month !== 'undefined' &&
+	typeof this.alternateDate.day !== 'undefined'){
+	this.UpdateWithAlternateDateListOfUniqueStockSymbolsAndDates();	
+    }
+    this.GetHistoricalStockData(this.CheckComplete.bind(this));
+    	this.GetCurrentStockData(this.CheckComplete.bind(this));
 };
 
 Reader.prototype.initializePortfolio = function() {
     this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+//    console.log("portfolio:",this.portfolio);
 }
 Reader.prototype.init = function() {
+    console.log("initializePorftolio()");
+    this.initializePortfolio(); //    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+        console.log("after initializePorftolio()");
 //    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
     this.ReadHistoricalStockData(this.Package1.bind(this));
-    this.completionsNeeded = 2;
-    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
-    this.CreateListOfUniqueStockSymbols();
-    this.CreateListOfUniquePurchaseDates();
+//    this.completionsNeeded = 2;
+//    this.initializePortfolio(); //    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+//    this.CreateListOfUniqueStockSymbols();
+//    this.CreateListOfUniquePurchaseDates();
 //    this.CreateListOfUniqueStockSymbolsAndDates();
     this.CalculatePurchaseSharePrice();
     this.CalculateHoldingTimePeriod();
 
+    //What is a better way to validate the alternateDate object? And where is the appropriate spot to do it? In the constructor? Or simply degrade gracefully.
+    //also need to check that provided date is within range; or some hack where we try to create a date and if that isn't successful we throw an error.
+    if (typeof this.alternateDate !== 'undefined' &&
+	typeof this.alternateDate.year !== 'undefined' &&
+	typeof this.alternateDate.month !== 'undefined' &&
+	typeof this.alternateDate.day !== 'undefined'){
+	console.log(' set currentStockData by filtering historicalStockData on our given date');
+	console.log(', add in unique ticker and date for the desired date');
+
+    } else {
+	console.log("call GetCurrentStockData");
     //Asynch call
-    this.GetCurrentStockData(this.CheckComplete.bind(this));
+//	this.GetCurrentStockData(this.CheckComplete.bind(this));
+    }
     //Asynch call
-    this.GetHistoricalStockData(this.CheckComplete.bind(this));
+//    this.GetHistoricalStockData(this.CheckComplete.bind(this)); //this is a dupe bc Package1 calls it as well.
   
     /*    
   var that = this;
@@ -117,7 +144,7 @@ Reader.prototype.PrintUniqueTickers = function() {
 };
 
 Reader.prototype.CreateListOfUniqueStockSymbols = function() {
-
+    console.log("CreateListOfUniqueStockSymbols");
 //add in default indices, proly should add in wilsire and other large ones.
     this.stockList.push("^dji");
     this.stockList.push("^gspc");
@@ -141,6 +168,7 @@ Reader.prototype.CreateListOfUniqueStockSymbols = function() {
 		    }
 		}
 		if (foundFlag===false){
+//		    console.log("adding:"+this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase());
                     this.stockList.push(this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
 		}
 	    }
@@ -172,7 +200,9 @@ Reader.prototype.CreateListOfUniquePurchaseDates = function() {
 
 //why stick the data in a sqlitedb when the db would be temp anyway. just save the data off in a flatafile/json object
 Reader.prototype.GetCurrentStockData = function(cb) {
-//  console.log("GetCurrentStockData");
+    this.completionsNeeded+=1;
+    
+  console.log("GetCurrentStockData");
     var that = this;
     var completionCounter=0;
     
@@ -192,8 +222,8 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     }
     var month=today.getMonth()+1; 
     var year=today.getFullYear();
-    var myDateString=year+"-"+month+"-"+day;
-    //    console.log("stockList.length:"+this.stockList.length);
+    var myDateString=year+"-"+month+"-"+day; //getAlternateDateStringYdashMdashD
+        console.log("stockList.length:"+this.stockList.length);
     for (var i = 0; i< this.stockList.length; i++){
 	var requestOptions= {
 	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i] + '&f=l1opwt7',
@@ -233,11 +263,11 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 				       });
 	    //	    console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
 	    completionCounter++;
-            //console.log("cC:"+completionCounter+" t.sL.l:"+that.stockList.length);
+            console.log("cC:"+completionCounter+" t.sL.l:"+that.stockList.length);
 	    //ensure that all requests complete before executing callback
 	    if (completionCounter==that.stockList.length){
 		//		console.log(JSON.stringify(that.currentStockData));
-		//		console.log("getCurrentStockData done");
+				console.log("getCurrentStockData done");
 		//console.log("cSD:",that.currentStockData);
 		if (cb && typeof cb === 'function') {
 		    cb();
@@ -375,7 +405,14 @@ Reader.prototype.CalculateHoldingTimePeriod = function() {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
     
-    var now = new Date;
+    var now;
+    if (this.alternateDate) {
+	//months are zero based
+	now = this.getAlternateDateDateObject();//new Date(this.alternateDate.year,this.alternateDate.month-1,this.alternateDate.day);
+    } else {
+	now = new Date;
+    }
+    console.log("now date:",now);
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	if (this.portfolio.portfolio[i].display=="yes"){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
@@ -484,6 +521,9 @@ var stock = this.portfolio.portfolio[i].portfolioStocks[j];
 
 //the uniqueSymbolAndDatesArray is used to retrieve the historical stock data with as few network calls as possible.
 Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
+
+    // if I had a field named 'tickerComparison' (instead of comparisonTicker) in the portfolio file that was being added as a blank string here. if you also had a field named comparisonTicker then it wouldn't leak in
+    
 //console.log("yeopp");
   var comparisonTicker = "";
     //loop over the portfolio
@@ -558,6 +598,35 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 //  console.log("t.uSADA:",this.uniqueSymbolAndDatesArray);
 };
 
+
+Reader.prototype.getAlternateDateDateObject = function() {
+    return new Date(this.alternateDate.year,this.alternateDate.month-1, this.alternateDate.day);
+}
+Reader.prototype.getAlternateDateStringMDY = function() {
+    return this.alternateDate.month+'/'+this.alternateDate.day+'/'+this.alternateDate.year;
+}
+Reader.prototype.getAlternateDateStringYdashMdashD = function() {
+    return this.alternateDate.year +'-'+ this.alternateDate.month+'-'+this.alternateDate.day;
+}
+
+Reader.prototype.UpdateWithAlternateDateListOfUniqueStockSymbolsAndDates = function() {
+    var i;
+    console.log("updating");
+    for ( i=0; i < this.stockList.length; i++) {
+	this.uniqueSymbolAndDatesArray.push({
+	    ticker:this.stockList[i],
+	    date:this.getAlternateDateStringMDY()
+	});
+    }/*
+    for ( i=0; i < this.uniqueSymbolAndDatesArray.length; i++){
+	this.uniqueSymbolAndDatesArray.push({
+	    ticker:this.uniqueSymbolAndDatesArray[i].ticker,
+	    date:this.getAlternateDateStringMDY
+	});
+    }*/
+    console.log("update dates:",this.uniqueSymbolAndDatesArray);
+}
+
 //can we generalize this function to pass in the array to be written/pushed to, the propert(ies) to compare, and the propert(ies) to write?
 Reader.prototype.CreateListOfComparisonStocks = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){
@@ -588,7 +657,8 @@ Reader.prototype.CreateListOfComparisonStocks = function() {
 
 //This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
 Reader.prototype.GetHistoricalStockData = function(cb) {
-//  console.log("GetHistoricalStockData");
+    this.completionsNeeded+=1;
+  console.log("GetHistoricalStockData");
     var that = this,
 	completionCounter = 0;
   //  console.log(this.uniqueSymbolAndDatesArray.length);
@@ -650,7 +720,7 @@ Reader.prototype.GetHistoricalStockData = function(cb) {
 		//ensure that all requests complete before executing callback
 		if (completionCounter==that.uniqueSymbolAndDatesArray.length){
 		  //console.log(JSON.stringify(that.currentStockData));
-		    //		    console.log("getHistoricalStockData done");
+		 		    console.log("getHistoricalStockData done");
 		    //		    console.log(JSON.stringify(that.historicalStockData));
 		    that.WriteHistoricalStockData();
 		    if (cb && typeof cb==='function') {

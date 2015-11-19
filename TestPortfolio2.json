@@ -3,7 +3,8 @@
      {
 	 "portfolioName":"model",
        "display":"yes",
-       "tickerComparison":"aapl",
+	 "comparisonTicker":"aapl",
+	 "tickerComparison":"aapZ",
 	 "portfolioStocks": [
 	     {"ticker":"bwld","tickerName":"TRPrice Mid-Cap Growth Fund", "shares":1, "totalPurchasePrice":140.670000, "purchaseDate": "8/15/2013", "commissionToBuy":0, "commissionToSell":0, "contributionType":"ELECTIVE DEFERRAL"},
 	     {"ticker":"vips","tickerName":"Vanguard Mid-Cap Index Fund Instl Shares", "shares":1, "totalPurchasePrice":16.670000, "purchaseDate": "8/15/2013", "commissionToBuy":0, "commissionToSell":0, "contributionType":"ELECTIVE DEFERRAL"}

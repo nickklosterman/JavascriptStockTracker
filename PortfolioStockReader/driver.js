@@ -17,7 +17,7 @@ switch (mySwitch)
     myHelper.GetHistoricalStockData();
     break;
   case 2:
-    myReader = new R({portfolioFile:"../TestPortfolio1.json"});
+    myReader = new R({portfolioFile:"../TestPortfolio2.json",alternateDate:{day:"4",month:"2",year:"2015"}});
     myReader.init();
     break;
   case 3:
