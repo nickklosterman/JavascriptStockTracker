@@ -1,3 +1,8 @@
+/*
+I don't think this is a good implementation as it is all very monolithic. There aren't sub objects taht I'm using. 
+It isn't very modular.
+*/
+
 var fs = require('graceful-fs'),
     //    sqlite3 = require('sqlite3'), look at tumblr for sqlite stuff
     // npm install -save someNPMthingee
@@ -38,6 +43,8 @@ Reader.prototype.callbackStack = function() {
     this.AppendCurrentStockData();
     this.CalculatePortfolioPercentages();
 
+    this.CalculateTotalPortfolioStats();
+    
     var tickerNum = 2;
     switch(tickerNum) {
     case 0:
@@ -322,15 +329,15 @@ Reader.prototype.PortfolioCalculateGains = function(){
     for (var i=0; i<this.portfolio.portfolio.length; i++){
 	var dailyGains = 0,
             dailyLosses = 0,
-totalDailyGains = 0,
-totalDailyLosses = 0, 
-	totalCommissionPaid = 0,
-	totalPurchasePrice = 0,
-	totalGainLoss = 0,
-        totalGains = 0,
+	    totalDailyGains = 0,
+	    totalDailyLosses = 0, 
+	    totalCommissionPaid = 0,
+	    totalPurchasePrice = 0,
+	    totalGainLoss = 0,
+            totalGains = 0,
 	    totalLosses = 0,
 	    portfolioMutualFundFeesPaid = 0, 
-	portfolioValue = 0;
+	    portfolioValue = 0;
 	if ( this.portfolio.portfolio[i].display == 'yes'){
 	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
 		if ( this.portfolio.portfolio[i].portfolioStocks[j].dollarGain > 0) {
@@ -722,7 +729,7 @@ Reader.prototype.RenderOutput = function() {
 	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekPercentage}}%</td>  "
 	+ "<td class=\"number \">{{formatNumber_TwoDecimal fiftyTwoWeekSpread}}%</td>  "
     	+ "<td class=\"number \">${{formatCurrency mutualFundFeesPaid}}</td>  "
-	+ "<td class=\"\">{{trend}}</td> </tr>\n",
+	+ "<td class=\"\"><img src='http://ichart.finance.yahoo.com/z?s={{ticker}}&t=1y&q=l&l=on&z=s&p=m100,&a=&c=%5EGSPC&lang=en-US&region=US'></td> </tr>\n",
 	
 	portfolioTemplate = "<div>{{portfolioName}}</div>"
         + " <div>{{date}}</div><div>{{portfolioGains}}</div>"+
@@ -742,7 +749,10 @@ Reader.prototype.RenderOutput = function() {
         + "<tr><td colspan=\"4\">Mutual Fund Fees Paid </td><td colspan=\"4\">${{ formatCurrency totalMutualFundFeesPaid}}</td><td colspan=\"12\"></td></tr>"
                                  + "<tr><td colspan=\"4\">PortfolioWorth </td><td colspan=\"4\">${{ formatCurrency portfolioValue}}</td><td colspan=\"12\"></td></tr>",
 
-	mySwitch = 2;
+	overallStatsTemplate =    "<table><tr><td>Total Gains</td><td> ${{ formatCurrency totalGains}}</td></tr><tr> <td>Total Lossess</td><td> ${{formatCurrency totalLosses}}</td></tr><tr><td>TotalValue</td><td> ${{formatCurrency totalValue}}</td></tr> </table>",
+	
+	mySwitch = 2,
+	rightNow = new Date();
 
     hbs.registerHelper("colorStylingPositive", function(value) {
 	//	console.log((parseFloat(value) > 0)+ " "+ value);
@@ -764,7 +774,7 @@ Reader.prototype.RenderOutput = function() {
 	}
 	return value.toFixed(2);
     });
-    var rightNow = new Date();
+
     console.log("<!DOCTYPE html>"
 		+ "<html>"
 		+ "<head><title>"
@@ -850,6 +860,9 @@ Reader.prototype.RenderOutput = function() {
 	break;
     }
 
+    var overallStatsTemplate = hbs.compile(overallStatsTemplate);
+    console.log(overallStatsTemplate(this.portfolio));
+    
     //console.log(result);
     console.log("</body></html>");
 }
@@ -872,13 +885,35 @@ Reader.prototype.AppendCurrentStockData = function() {
 		    //the 52wk spread is the % of the high low range when compared to the current price. A large spread means lots of growth (volatility) and a small spread means less growth/volatility
 		    this.portfolio.portfolio[i].portfolioStocks[j].fiftyTwoWeekSpread = 100 *( stockData[0].fiftyTwoWeekHigh - stockData[0].fiftyTwoWeekLow ) /  stockData[0].currentPrice;
 		    this.portfolio.portfolio[i].portfolioStocks[j].dailyGainLoss = ( stockData[0].currentPrice - stockData[0].prevClosePrice ) * this.portfolio.portfolio[i].portfolioStocks[j].shares;
-
 		    this.portfolio.portfolio[i].portfolioStocks[j].trend =stockData[0].trend;
 		}
 	    }
 	}
     }
 }
+Reader.prototype.CalculateTotalPortfolioStats = function () {
+    var totalGains=0,
+	totalLosses=0,
+	totalValue=0;
+	
+    for ( var i=0;i<this.portfolio.portfolio.length;i++){
+	if (this.portfolio.portfolio[i].display=="yes"){
+/*	    var gainLoss = totalGains + this.portfolio.portfolio[i].totalGainLoss ;
+	    if (gainLoss > 0) {
+		totalGains = totalGains + gainLoss;
+	    } else {
+		totalLosses = totalLosses - gainLoss;
+		}*/
+	    totalGains = totalGains + this.portfolio.portfolio[i].totalGains;
+	    totalLosses = totalLosses + this.portfolio.portfolio[i].totalLosses;
+	    totalValue = totalValue + this.portfolio.portfolio[i].portfolioValue ;
+	}
+    }
+    this.portfolio.totalGains = totalGains;
+    this.portfolio.totalLosses = totalLosses;
+    this.portfolio.totalValue = totalValue;
+    
+};
 
 Reader.prototype.CalculatePortfolioPercentages = function() {
     for ( var i=0;i<this.portfolio.portfolio.length;i++){

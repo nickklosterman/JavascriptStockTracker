@@ -2,11 +2,13 @@ var fs =require('graceful-fs'),
     request = require('request');
 
 function Helper(parameters){
-    this.inputStockList= new Array();
+    this.inputStockList= new Array(); //this declaration calls the Array constructor, which may have been overridden.
+    this.uniqueStockList = []; //this declaration creates an empty array;
     this.inputPortfolioFile=parameters['portfolioFile'] || 'portfolio.json';
     this.portfolio="";
     this.CreateListOfUniqueStockSymbolsAndDates();
     this.stockData=new Array();    
+
 }
 
 
@@ -19,6 +21,7 @@ Helper.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 		for ( var k=0;k<this.inputStockList.length;k++){
 		    if ( this.inputStockList[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() &&
 			 this.inputStockList[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+//the date portion could be an array such that we first check the ticker, then we check to see if the date is in the date array. This would make things more compat and readable.  and 
 			foundFlag=true;
 			break;
 		    }
@@ -28,6 +31,66 @@ Helper.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 			ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase(),
 			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
 		    });
+		}
+	    }
+	}
+    }
+};
+
+/*
+This version doesn't key off the display='yes'
+This version won't be very efficient since there are a lot of repeat entries and we therefore will be running that for loop to check if the entry was already added a lot. It isn't a very long list so it should run relatively fast however.
+*/
+Helper.prototype.CreateListOfUniqueStockSymbols = function() {
+    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+    var i = 0,
+	j = 0,
+	k = 0,
+	foundFlag=false;
+    for ( i=0;i<this.portfolio.portfolio.length;i++){
+	for ( j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+	    foundFlag=false;
+	    //check to see if the stock was already added
+	    for (  k=0;k<this.uniqueStockList.length;k++){
+		if ( this.uniqueStockList[k]===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() ){
+		    foundFlag=true;
+		    break;
+		}
+	    }
+	    // the stock wasn't found so we add it to the array
+	    if (foundFlag===false){
+		this.uniqueStockList.push(
+		    this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()
+		);
+	    }
+	}
+    }
+};
+/*
+This version takes 'displaySwitch' such that if true we only use stocks in protfolios with display set to 'yes'
+*/
+Helper.prototype.CreateListOfUniqueStockSymbolsV2 = function(displaySwitch) {
+    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
+    var i = 0,
+	j = 0,
+	k = 0,
+	foundFlag=false;
+    for ( i=0;i<this.portfolio.portfolio.length;i++){
+	if (displaySwitch ? this.portfolio.portfolio[i].display==="yes" : true ){
+	    for ( j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+		foundFlag=false;
+		//check to see if the stock was already added
+		for (  k=0;k<this.uniqueStockList.length;k++){
+		    if ( this.uniqueStockList[k]===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() ){
+			foundFlag=true;
+			break;
+		    }
+		}
+		// the stock wasn't found so we add it to the array
+		if (foundFlag===false){
+		    this.uniqueStockList.push(
+			this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()
+		    );
 		}
 	    }
 	}

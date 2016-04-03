@@ -2,17 +2,22 @@ var R=require('./reader.js');
 var H=require('./helper.js');
 
 var mySwitch = 0;
+console.log("Running case "+mySwitch);
 switch (mySwitch)
 {
     case 0:
-    var myReader=new R({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
+    var myReader=new R({portfolioFile:"../../../BB/configfiles/StockTrackerJSON/AllPortfolios.json"});
   myReader.init();
 //    myReader.GetCurrentStockData(cb);
 
     break;
     case 1:
-    var myHelper = new H({portfolioFile:"../../configfiles/StockTrackerJSON/AllPortfolios.json"});
-    myHelper.GetHistoricalStockData();
+    var myHelper = new H({portfolioFile:"../../../BB/configfiles/StockTrackerJSON/AllPortfolios.json"});
+//    myHelper.GetHistoricalStockData();
+    //    myHelper.CreateListOfUniqueStockSymbols();
+        myHelper.CreateListOfUniqueStockSymbolsV2(false);
+    //    console.log(JSON.stringify(myHelper.inputStockList));
+    console.log(JSON.stringify(myHelper.uniqueStockList.sort()));
     break;
   case 2:
     var myReader = new R({portfolioFile:"../TestPortfolio1.json"});
