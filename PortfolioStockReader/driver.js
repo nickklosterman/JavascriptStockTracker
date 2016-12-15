@@ -1,7 +1,7 @@
 var R=require('./reader.js');
 var H=require('./helper.js');
 
-var mySwitch = 0;
+var mySwitch = 2;
 console.log("Running case "+mySwitch);
 switch (mySwitch)
 {

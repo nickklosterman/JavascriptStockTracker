@@ -19,7 +19,7 @@ function Reader(parameters){
 
     this.portfolio="";
     this.completionCounter = 0;
-    this.completionsNeeded = 0;
+
     this.stockList= new Array();
 
     this.purchaseDateList = new Array();
@@ -27,6 +27,28 @@ function Reader(parameters){
     this.historicalDataFile = 'historicalStockData.txt';
 
 };
+
+
+    function displayedPortfolios(value) {
+	return value.display === "yes";
+    }
+    
+    Reader.prototype.ReadPortfolioFile = function() {
+	var that = this;
+    return new Promise(function(resolve,reject) {
+	fs.readFile(that.inputPortfolioFile, 'utf8',function(err, data) {
+	    if (err) {
+		reject(err);
+	    } else {
+		var t = JSON.parse(data);
+		that.portfolio = t.portfolio.filter(displayedPortfolios);
+		resolve(data) ;
+	    }
+	});
+    });
+};
+
+
 
 Reader.prototype.callbackStack = function() {
     this.AppendCurrentStockData();
@@ -69,47 +91,37 @@ Reader.prototype.callbackStack = function() {
 //    this.ParseForPieChart("totalPurchasePrice","ticker"); //is there an easier way such that I could do a watch on the datasource and refresh the graph? That way I don't have to have multiple graphs that are displayed  or hidden based on what data is selected.
 };
 
-Reader.prototype.CheckComplete = function() {
-    this.completionCounter+=1;
-//    console.log("cC:"+this.completionCounter);
-    if (this.completionCounter==this.completionsNeeded){
-	//	console.log("calling cbS");
-	this.callbackStack();
-    }
-
-};
-Reader.prototype.Package1 = function () {
-  this.CreateListOfUniqueStockSymbolsAndDates();
-  this.GetHistoricalStockData(this.CheckComplete.bind(this));
-};
 Reader.prototype.init = function() {
-//    this.ReadHistoricalStockData(this.CreateListOfUniqueStockSymbolsAndDates.bind(this));
-    this.ReadHistoricalStockData(this.Package1.bind(this));
-    this.completionsNeeded = 2;
-    this.portfolio = JSON.parse(fs.readFileSync(this.inputPortfolioFile, 'utf8'));
-    this.CreateListOfUniqueStockSymbols();
-    this.CreateListOfUniquePurchaseDates();
-//    this.CreateListOfUniqueStockSymbolsAndDates();
-    this.CalculatePurchaseSharePrice();
-    this.CalculateHoldingTimePeriod();
+    var that = this;
+    Promise.all([this.ReadPortfolioFile(),this.ReadHistoricalStockData()]).then(function(good) {
 
-    //Asynch call
-    this.GetCurrentStockData(this.CheckComplete.bind(this));
-    //Asynch call
-    this.GetHistoricalStockData(this.CheckComplete.bind(this));
-  
+	//    that.ReadHistoricalStockData(that.CreateListOfUniqueStockSymbolsAndDates.bind(that));
+	that.CreateListOfUniqueStockSymbols();
+	that.CreateListOfUniquePurchaseDates();
+	that.CreateListOfUniqueStockSymbolsAndDates();
+	that.CalculatePurchaseSharePrice();
+	that.CalculateHoldingTimePeriod();
+
+	Promise.all([that.GetCurrentStockData(),that.GetHistoricalStockData()]).then(function() {
+	    that.callbackStack()
+	},function() {
+	    console.log("oh shit");
+	});
+    },function(bad) {
+	console.log("fuck");
+    });
     /*    
-  var that = this;
-    // this.CalculatePurchaseSharePrice();
-    console.log("this.portfolio");
-    console.log(JSON.stringify(this.portfolio));
-    console.log("this.stockList");
-    console.log(JSON.stringify(this.stockList.sort()));
-    console.log("this.purchaseDateList");
-    console.log(JSON.stringify(this.purchaseDateList.sort()));
+	  var that = this;
+	  // this.CalculatePurchaseSharePrice();
+	  console.log("this.portfolio");
+	  console.log(JSON.stringify(this.portfolio));
+	  console.log("this.stockList");
+	  console.log(JSON.stringify(this.stockList.sort()));
+	  console.log("this.purchaseDateList");
+	  console.log(JSON.stringify(this.purchaseDateList.sort()));
 
-    console.log("this.uniqueSymbolAndDatesArray");
-    console.log(JSON.stringify(this.uniqueSymbolAndDatesArray));
+	  console.log("this.uniqueSymbolAndDatesArray");
+	  console.log(JSON.stringify(this.uniqueSymbolAndDatesArray));
     */
 };
 
@@ -133,48 +145,50 @@ Reader.prototype.CreateListOfUniqueStockSymbols = function() {
       });
       };
       });*/
-    for ( var i=0;i<this.portfolio.portfolio.length;i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+
+    for ( var i=0;i<this.portfolio.length;i++){
+
+	    for ( var j=0;j<this.portfolio[i].portfolioStocks.length;j++){
 		var foundFlag=false;
 		for ( var k=0;k<this.stockList.length;k++){
-		    if (this.stockList[k]===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase()){
+		    if (this.stockList[k]===this.portfolio[i].portfolioStocks[j].ticker.toLowerCase()){
 			foundFlag=true;
 			break;
 		    }
 		}
 		if (foundFlag===false){
-                    this.stockList.push(this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
+                    this.stockList.push(this.portfolio[i].portfolioStocks[j].ticker.toLowerCase() );
 		}
 	    }
-	}
+
     }
+    
 }
 
 //This is needed to efficiently perform the comparison to the benchmark  --> this would need to be reworked if each stock or each portfolio could have its own comparator/benchmark
 Reader.prototype.CreateListOfUniquePurchaseDates = function() {
-    for ( var i=0;i<this.portfolio.portfolio.length;i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+    for ( var i=0;i<this.portfolio.length;i++){
+	    for ( var j=0;j<this.portfolio[i].portfolioStocks.length;j++){
 		var foundFlag=false;
 		for ( var k=0;k<this.purchaseDateList.length;k++){
-		    if (this.purchaseDateList[k]===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
+		    if (this.purchaseDateList[k]===this.portfolio[i].portfolioStocks[j].purchaseDate ){
 			foundFlag=true;
 			break;
 		    }
 		}
 		if (foundFlag===false){
 		    
-                    this.purchaseDateList.push(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate);
+                    this.purchaseDateList.push(this.portfolio[i].portfolioStocks[j].purchaseDate);
 		}
 	    }
-	}
+
     }
+    console.log("get here");
 }
 
 
 //why stick the data in a sqlitedb when the db would be temp anyway. just save the data off in a flatafile/json object
-Reader.prototype.GetCurrentStockData = function(cb) {
+Reader.prototype.GetCurrentStockData = function() {
 //  console.log("GetCurrentStockData");
     var that = this;
     var completionCounter=0;
@@ -182,8 +196,6 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     var today = new Date()
     var day=today.getDate(); //day of month
     var weekday=today.getDay();
-
-    //this is a weak fix to prevent trying to look things up on weekends.  How did I do this for the python version?
     switch(weekday) {
     case 0:
 	day-=2;
@@ -195,11 +207,52 @@ Reader.prototype.GetCurrentStockData = function(cb) {
     }
     var month=today.getMonth()+1; 
     var year=today.getFullYear();
-    var myDateString=year+"-"+month+"-"+day;
-    //    console.log("stockList.length:"+this.stockList.length);
-    for (var i = 0; i< this.stockList.length; i++){
+	var myDateString=year+"-"+month+"-"+day;
+
+    return new Promise(reject,resolve) {
+    //this is a weak fix to prevent trying to look things up on weekends.  How did I do this for the python version?
+	var promises = [];
+//    console.log("stockList.length:"+this.stockList.length);
+	for (var i = 0; i< this.stockList.length; i++){
+	    promises.push(getStockData(this.stockList[i]));
+	}
+	Promise.all(promises).then(function{data}{
+	    data.forEach(function(ele,idx,arr) {
+		that.ParseAndAppendStockData(ele,myDateString)
+	    });
+	    console.log("shit will this work like I want?");
+	    resolve(); //
+	},function(bad){
+	    console.log("goddamn it");
+	    reject();
+	});
+    }
+};
+
+Reader.prototype.ParseAndAppendStockData = function(body,dateString) {
+    //	    console.log(that.stockList[i]+" " +body);
+    var split = body.replace(/\"/g,"").replace(/\n/,"").split(",");
+    
+    var lowHigh=split[3].split(" - "),
+	low=lowHigh[0] || "",
+	high=lowHigh[1] || "";
+    this.currentStockData.push({ticker:this.stockList[i],
+				currentPrice:parseFloat(split[0]),
+				openPrice:parseFloat(split[1])||null,
+				prevClosePrice:parseFloat(split[2])||null,
+				fiftyTwoWeekLow:parseFloat(low)||null,
+				fiftyTwoWeekHigh:parseFloat(high)||null,
+				trend:split[4],
+				date:dateString
+			       });
+    
+};
+
+function getStockDataPoint(ticker) {
+    return new Promise(function(resolve,reject){
 	var requestOptions= {
-	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i] + '&f=l1opwt7',
+	    //	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + this.stockList[i] + '&f=l1opwt7',
+	    url:'http://download.finance.yahoo.com/d/quotes.csv?s=' + ticker + '&f=l1opwt7',
 	    headers: {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11' }
 	}
 	var dataRequest=request(requestOptions,(function(i,url) { return function(err,resp,body) {
@@ -214,43 +267,13 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 		    console.log(url+" "+err);
 		    console.log(err.stack);
 		}
+		reject(err);
 	    }
-	    //	    console.log(resp);
-	    //	    	    console.log(url);
-	    //	    console.log(i);
-	    
-	    //	    console.log(that.stockList[i]+" " +body);
-	    var split = body.replace(/\"/g,"").replace(/\n/,"").split(",");
-	    
-	    var lowHigh=split[3].split(" - "),
-		low=lowHigh[0] || "",
-		high=lowHigh[1] || "";
-	    that.currentStockData.push({ticker:that.stockList[i],
-					currentPrice:parseFloat(split[0]),
-					openPrice:parseFloat(split[1])||null,
-					prevClosePrice:parseFloat(split[2])||null,
-					fiftyTwoWeekLow:parseFloat(low)||null,
-				       fiftyTwoWeekHigh:parseFloat(high)||null,
-					trend:split[4],
-					date:myDateString
-				       });
-	    //	    console.log(JSON.stringify(that.currentStockData[that.currentStockData.length-1]));
-	    completionCounter++;
-            //console.log("cC:"+completionCounter+" t.sL.l:"+that.stockList.length);
-	    //ensure that all requests complete before executing callback
-	    if (completionCounter==that.stockList.length){
-		//		console.log(JSON.stringify(that.currentStockData));
-		//		console.log("getCurrentStockData done");
-		//console.log("cSD:",that.currentStockData);
-		if (cb && typeof cb === 'function') {
-		    cb();
-		}
-	    }
-        }
-								})(i,requestOptions.url)
-			       );
-
-    }
+	    resolve(body);
+	}
+								})
+			       )
+    });
     //  console.log(JSON.stringify(outputArray));
     
 }
@@ -258,25 +281,25 @@ Reader.prototype.GetCurrentStockData = function(cb) {
 //Reader.prototype.CalculateDollarGains = function(){
 Reader.prototype.CalculateGains = function(){
     //  console.log("0 cSD_cG:",this.currentStockData);
-    for (var i=0; i<this.portfolio.portfolio.length; i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		var currentStockTicker = this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase();
+    for (var i=0; i<this.portfolio.length; i++){
+	if (this.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio[i].portfolioStocks.length; j++){
+		var currentStockTicker = this.portfolio[i].portfolioStocks[j].ticker.toLowerCase();
 		//		console.log("cSD_cG:",this.currentStockData);
 		var stockData = this.currentStockData.filter( function(item) {
                     return item.ticker === currentStockTicker.toLowerCase(); // 'this' context changes so I created currentStockTicker
                 });
 		if ( stockData.length == 0 ){ console.log("shitCG:"+currentStockTicker);} else {
 		    //console.log(stockData[0].currentPrice);
-		    this.portfolio.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * (this.portfolio.portfolio[i].portfolioStocks[j].shares) - (this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
+		    this.portfolio[i].portfolioStocks[j].dollarGain =  stockData[0].currentPrice * (this.portfolio[i].portfolioStocks[j].shares) - (this.portfolio[i].portfolioStocks[j].totalPurchasePrice) ;
 
 //should i be taking out the commission price for this percent gain calculation?  nah.. it gives us a true value of gains since the totalPurchasePrice has the commission in it. might even want to take out the commission to sell...but then why not take into acct taxes etc etc etc...waht a rabbit hole. 
-		    var temp = (this.portfolio.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice ) * 100;
-		    this.portfolio.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
-		    this.portfolio.portfolio[i].portfolioStocks[j].currentValue = stockData[0].currentPrice * this.portfolio.portfolio[i].portfolioStocks[j].shares;
-		    if (this.portfolio.portfolio[i].portfolioStocks[j].expenseRatio){
-			this.CalculateMutualFundFeesPaid(this.portfolio.portfolio[i].portfolioStocks[j],stockData[0]);
-///			console.log("j",this.portfolio.portfolio[i].portfolioStocks[j].mutualFundFeesPaid)
+		    var temp = (this.portfolio[i].portfolioStocks[j].dollarGain / this.portfolio[i].portfolioStocks[j].totalPurchasePrice ) * 100;
+		    this.portfolio[i].portfolioStocks[j].percentGain = temp == null ? Infinity : temp;
+		    this.portfolio[i].portfolioStocks[j].currentValue = stockData[0].currentPrice * this.portfolio[i].portfolioStocks[j].shares;
+		    if (this.portfolio[i].portfolioStocks[j].expenseRatio){
+			this.CalculateMutualFundFeesPaid(this.portfolio[i].portfolioStocks[j],stockData[0]);
+///			console.log("j",this.portfolio[i].portfolioStocks[j].mutualFundFeesPaid)
 		    }
 		    
 
@@ -284,6 +307,7 @@ Reader.prototype.CalculateGains = function(){
 	    }
 	}
     }
+    console.log("get ehre");
     //console.log(JSON.stringify(this.portfolio));
 }
 
@@ -379,11 +403,11 @@ Reader.prototype.CalculateHoldingTimePeriod = function() {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
     
     var now = new Date;
-    for (var i=0; i<this.portfolio.portfolio.length; i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		var pD = new Date(this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate); // "10/23/2003" 
-		this.portfolio.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - pD ) / ( 365 * 24 * 3600 * 1000);
+    for (var i=0; i<this.portfolio.length; i++){
+	if (this.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio[i].portfolioStocks.length; j++){
+		var pD = new Date(this.portfolio[i].portfolioStocks[j].purchaseDate); // "10/23/2003" 
+		this.portfolio[i].portfolioStocks[j].holdingTimePeriodInYears = ( now - pD ) / ( 365 * 24 * 3600 * 1000);
 	    }
 	}
     }
@@ -414,11 +438,11 @@ Reader.prototype.CalculateAnnualizedReturn = function(stockItem) {
 
 Reader.prototype.ComputeAnnualizedReturn = function(){
     //    console.log("cSD_cAR 1:",this.currentStockData);
-    for (var i=0; i<this.portfolio.portfolio.length; i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio.portfolio[i].portfolioStocks[j] );
-		//	    	console.log("aR",this.portfolio.portfolio[i].portfolioStocks[j].annualizedReturn);
+    for (var i=0; i<this.portfolio.length; i++){
+	if (this.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio[i].portfolioStocks.length; j++){
+		this.portfolio[i].portfolioStocks[j].annualizedReturn = this.CalculateAnnualizedReturn( this.portfolio[i].portfolioStocks[j] );
+		//	    	console.log("aR",this.portfolio[i].portfolioStocks[j].annualizedReturn);
 	    }
 	}
     }
@@ -426,12 +450,13 @@ Reader.prototype.ComputeAnnualizedReturn = function(){
 };
 
 Reader.prototype.CalculatePurchaseSharePrice = function(){
-    for (var i=0; i<this.portfolio.portfolio.length; i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-	    for (var j=0; j<this.portfolio.portfolio[i].portfolioStocks.length; j++){
-		if (typeof this.portfolio.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
-		    this.portfolio.portfolio[i].portfolioStocks[j].sharePrice = ( parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].totalPurchasePrice) - parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].commissionToBuy) ) / parseFloat(this.portfolio.portfolio[i].portfolioStocks[j].shares);
-		    //		console.log("sharePrice",this.portfolio.portfolio[i].portfolioStocks[j].sharePrice);
+//    console.log("CPSP");
+    for (var i=0; i<this.portfolio.length; i++){
+	if (this.portfolio[i].display=="yes"){
+	    for (var j=0; j<this.portfolio[i].portfolioStocks.length; j++){
+		if (typeof this.portfolio[i].portfolioStocks[j].sharePrice !== 'undefined') {
+		    this.portfolio[i].portfolioStocks[j].sharePrice = ( parseFloat(this.portfolio[i].portfolioStocks[j].totalPurchasePrice) - parseFloat(this.portfolio[i].portfolioStocks[j].commissionToBuy) ) / parseFloat(this.portfolio[i].portfolioStocks[j].shares);
+		    //		console.log("sharePrice",this.portfolio[i].portfolioStocks[j].sharePrice);
 		}
 	    }
 	}
@@ -490,21 +515,21 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 //console.log("yeopp");
   var comparisonTicker = "";
     //loop over the portfolio
-    for ( var i=0;i<this.portfolio.portfolio.length;i++){
-	if (this.portfolio.portfolio[i].display=="yes"){
-          if (this.portfolio.portfolio[i].comparisonTicker) {
-            comparisonTicker = this.portfolio.portfolio[i].comparisonTicker;
+    for ( var i=0;i<this.portfolio.length;i++){
+	if (this.portfolio[i].display=="yes"){
+          if (this.portfolio[i].comparisonTicker) {
+            comparisonTicker = this.portfolio[i].comparisonTicker;
           }
-	    for ( var j=0;j<this.portfolio.portfolio[i].portfolioStocks.length;j++){
+	    for ( var j=0;j<this.portfolio[i].portfolioStocks.length;j++){
 		var foundTickerFlag=false,
                     foundComparisonTickerFlag=false;
 		for ( var k=0; k < this.uniqueSymbolAndDatesArray.length; k++ ){
-                  if (this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker) {
-                    comparisonTicker = this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker;
+                  if (this.portfolio[i].portfolioStocks[j].comparisonTicker) {
+                    comparisonTicker = this.portfolio[i].portfolioStocks[j].comparisonTicker;
 }
-		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase() &&
-			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
-//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate );
+		    if ( this.uniqueSymbolAndDatesArray[k].ticker===this.portfolio[i].portfolioStocks[j].ticker.toLowerCase() &&
+			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio[i].portfolioStocks[j].purchaseDate ){
+//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio[i].portfolioStocks[j].purchaseDate );
 			foundTickerFlag=true;
                       if (foundComparisonTickerFlag === true) {
 			break; //only break with both flags are true.
@@ -512,10 +537,10 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 		    }
 
 		    if ( 
-//			  ( this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker && this.uniqueSymbolAndDatesArray[k].ticker === this.portfolio.portfolio[i].portfolioStocks[j].comparisonTicker.toLowerCase()) ) &&
+//			  ( this.portfolio[i].portfolioStocks[j].comparisonTicker && this.uniqueSymbolAndDatesArray[k].ticker === this.portfolio[i].portfolioStocks[j].comparisonTicker.toLowerCase()) ) &&
 			  this.uniqueSymbolAndDatesArray[k].ticker === comparisonTicker.toLowerCase()  &&
-			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate ){
-//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate );
+			 this.uniqueSymbolAndDatesArray[k].date===this.portfolio[i].portfolioStocks[j].purchaseDate ){
+//console.log("t.uSADA.t:"+this.uniqueSymbolAndDatesArray[k].ticker+" ct:"+comparisonTicker+" t.p.p.pS.pD:"+this.portfolio[i].portfolioStocks[j].purchaseDate );
 			foundComparisonTickerFlag=true;
                       if (foundTickerFlag === true) {
 			break;
@@ -526,14 +551,14 @@ Reader.prototype.CreateListOfUniqueStockSymbolsAndDates = function() {
 		//add data if matching data not found
 		if (foundTickerFlag===false){
 		    this.uniqueSymbolAndDatesArray.push({
-			ticker:this.portfolio.portfolio[i].portfolioStocks[j].ticker.toLowerCase(),
-			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
+			ticker:this.portfolio[i].portfolioStocks[j].ticker.toLowerCase(),
+			date:this.portfolio[i].portfolioStocks[j].purchaseDate
 		    });
 		}
 		if (foundComparisonTickerFlag===false){
 		    this.uniqueSymbolAndDatesArray.push({
 			ticker:comparisonTicker,
-			date:this.portfolio.portfolio[i].portfolioStocks[j].purchaseDate
+			date:this.portfolio[i].portfolioStocks[j].purchaseDate
 		    });
 		}
 
@@ -591,10 +616,10 @@ Reader.prototype.CreateListOfComparisonStocks = function() {
 
 //This is only used for our comparison to a standard/benchmark. If we only want to analyze raw returns, we only need the data from the last close bc we have the datapoint for when  the security was purchased.
 Reader.prototype.GetHistoricalStockData = function(cb) {
-//  console.log("GetHistoricalStockData");
+  console.log("GetHistoricalStockData");
     var that = this,
 	completionCounter = 0;
-  //  console.log(this.uniqueSymbolAndDatesArray.length);
+//  console.log(this.uniqueSymbolAndDatesArray.length);
     for (var i = 0; i < this.uniqueSymbolAndDatesArray.length; i++){
 //		console.log(this.uniqueSymbolAndDatesArray[i]);
 	var date = this.uniqueSymbolAndDatesArray[i].date.split("/");
@@ -952,12 +977,14 @@ Reader.prototype.ParseForPieChart = function(valueParam,labelParam) {
 
 Reader.prototype.ReadHistoricalStockData = function(cb) {
     var that = this;
-    fs.readFile(this.historicalDataFile, function(err,data){
+    return new Promise(function(resolve,reject) {
+	/**/
+    fs.readFile(that.historicalDataFile, function(err,data){
 	if (err) { 
 	    if (err.code !== "ENOENT") {
 		console.log(err);
 		console.log(err.errno+ " "+process.ENOENT);
-		throw err;
+	    reject();//		throw err;
 	    }
 	    //	console.log(
 	} else {
@@ -965,12 +992,13 @@ Reader.prototype.ReadHistoricalStockData = function(cb) {
 	    //we need to check that the data is valid json somehow
 	    if (data.length > 0) {
 		that.historicalStockData = JSON.parse(data);
+		resolve();
 	    }
-
+//
 	}
-	if (typeof cb==='function') {
-	    cb();
-	}
+    });
+	/** /
+	if (true) {resolve();} else {reject();}*/
     });
 }
 

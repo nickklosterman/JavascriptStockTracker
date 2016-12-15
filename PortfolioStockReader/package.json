@@ -22,7 +22,7 @@
   "homepage": "https://github.com/nickklosterman/",
   "private": true,
   "dependencies": {
-    "graceful-fs": "3.0.4",
+    "graceful-fs": "^4.0",
     "handlebars": "^3.0.3",
     "request": "^2.57.0"
   }
